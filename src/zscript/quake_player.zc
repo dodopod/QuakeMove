@@ -11,6 +11,7 @@ class QuakePlayer : DoomPlayer
     const maxForwardMove = 12800;
     const maxSideMove = 10240;
     const normalFriction = 0.77;
+    const acceleration = 10.0;
 
 
     // Allow player to move/turn
@@ -53,8 +54,9 @@ class QuakePlayer : DoomPlayer
 			double friction, movefactor;
 			double fm, sm;
 
-			[friction, movefactor] = GetFriction();
+			//[friction, movefactor] = GetFriction();
 			//bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
+            moveFactor = GetMoveFactor();
             bobfactor = ORIG_FRICTION_FACTOR;
 			if (!player.onground && !bNoGravity && !waterlevel)
 			{
@@ -103,7 +105,7 @@ class QuakePlayer : DoomPlayer
             //Console.Printf("friction = %.2f", friction);
             //Console.Printf("vel = %.2f", vel.Length());
 
-            Accelerate(wishDir, wishSpeed);
+            Accelerate(wishDir, wishSpeed, moveFactor * acceleration);
 
             Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
             Bob(Angle - 90, cmd.sidemove * bobfactor / 256., false);
@@ -122,7 +124,7 @@ class QuakePlayer : DoomPlayer
     }
 
 
-    virtual void Accelerate(Vector3 wishDir, double wishSpeed, double accel = 10)
+    virtual void Accelerate(Vector3 wishDir, double wishSpeed, double accel)
     {
         double currentSpeed = vel dot wishDir;
 
@@ -133,8 +135,8 @@ class QuakePlayer : DoomPlayer
         [friction, moveFactor] = GetFriction();
         accel *= friction > normalFriction ? moveFactor / ORIG_FRICTION_FACTOR : 1;   // Don't want stickiness*/
 
-        double moveFactor = GetMoveFactor();
-        accel *= moveFactor;
+        /*double moveFactor = GetMoveFactor();
+        accel *= moveFactor;*/
 
         //Console.Printf("%.2f", moveFactor);
 
