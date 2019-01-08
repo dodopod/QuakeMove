@@ -4,12 +4,13 @@ class QuakePlayer : DoomPlayer
 {
     Default
     {
-		Speed 9.14;
+		Speed 320 / ticRate;    // No idea how close Doom & Quake units are, but it feels right
     }
 
 
     const maxForwardMove = 12800;
     const maxSideMove = 10240;
+    const normalFriction = 0.77;
 
 
     // Allow player to move/turn
@@ -127,7 +128,11 @@ class QuakePlayer : DoomPlayer
         double addSpeed = wishSpeed - currentSpeed;
         if (addSpeed <= 0) return;
 
-        double accelSpeed = Clamp((accel / ticRate) * wishSpeed, 0, addSpeed);  // TODO: friction
+        double friction, moveFactor;
+        [friction, moveFactor] = GetFriction();
+        accel *= friction > normalFriction ? moveFactor / ORIG_FRICTION_FACTOR : 1;   // Don't want stickiness
+
+        double accelSpeed = Clamp((accel / ticRate) * wishSpeed, 0, addSpeed);
 
         vel += accelSpeed * wishDir;
     }
