@@ -4,7 +4,7 @@ class QuakePlayer : DoomPlayer
 {
     Default
     {
-		Speed 320 / ticRate;    // No idea how close Doom & Quake units are, but it feels right
+		Speed 320;  // No idea how close Doom & Quake units are, but it feels right
     }
 
 
@@ -96,7 +96,7 @@ class QuakePlayer : DoomPlayer
 
             Vector2 wishVel = AngleToVector(angle, fm) + AngleToVector(angle - 90, sm);
             Vector3 wishDir = (wishVel.Unit(), 0);  // TODO: move up, when flying/swimming
-            double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
+            double wishSpeed = Clamp(wishVel.Length() * speed / ticRate, 0, speed / ticRate);   // TODO: straferun CVar
 
             //Console.Printf("wishDir = (%.2f, %.2f)", wishDir.x, wishDir.y);
             //Console.Printf("wishSpeed = %.2f", wishSpeed);
