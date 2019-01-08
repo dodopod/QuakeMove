@@ -1,0 +1,134 @@
+// Code adapted from PlayerPawn & DoomPlayer in gzdoom.pk3
+
+class QuakePlayer : DoomPlayer
+{
+    Default
+    {
+		Speed 9.14;
+    }
+
+
+    const maxForwardMove = 12800;
+    const maxSideMove = 10240;
+
+
+    // Allow player to move/turn
+    // NOTE: Called from HandleMovement, called from PlayerThink
+    // NOTE: Doesn't handle
+    //  - Vertical look (CheckPitch, called from PlayerThink)
+    //  - Crouching (CheckCrouch, called from PlayerThink)
+    //  - Jumping (CheckJump, called from HandleMovement, called from PlayerThink)
+    //  - Up/down flight/swimming (CheckMoveUpDown, called from HandleMovement, called from PlayerThink)
+    override void MovePlayer()
+    {
+        let player = self.player;
+		UserCmd cmd = player.cmd;
+
+		// [RH] 180-degree turn overrides all other yaws
+		if (player.turnticks)
+		{
+			player.turnticks--;
+			Angle += (180. / TURN180_TICKS);
+		}
+		else
+		{
+			Angle += cmd.yaw * (360./65536.);
+		}
+
+        // TODO: Air, water, walk move functions
+		player.onground = (pos.z <= floorz) || bOnMobj || bMBFBouncer || (player.cheats & CF_NOCLIP2);
+
+		// killough 10/98:
+		//
+		// We must apply thrust to the player and bobbing separately, to avoid
+		// anomalies. The thrust applied to bobbing is always the same strength on
+		// ice, because the player still "works just as hard" to move, while the
+		// thrust applied to the movement varies with 'movefactor'.
+
+		if (cmd.forwardmove | cmd.sidemove)
+		{
+			double forwardmove, sidemove;
+			double bobfactor;
+			double friction, movefactor;
+			double fm, sm;
+
+			[friction, movefactor] = GetFriction();
+			//bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
+            bobfactor = ORIG_FRICTION_FACTOR;
+			if (!player.onground && !bNoGravity && !waterlevel)
+			{
+				// [RH] allow very limited movement if not on ground.
+				movefactor *= level.aircontrol;
+				bobfactor *= level.aircontrol;
+			}
+
+			fm = cmd.forwardmove;
+			sm = cmd.sidemove;
+			[fm, sm] = TweakSpeeds (fm, sm);
+            fm /= maxForwardMove;
+            sm /= maxSideMove;
+			/*fm *= Speed / 256;
+			sm *= Speed / 256;*/
+
+			// When crouching, speed and bobbing have to be reduced
+			if (CanCrouch() && player.crouchfactor != 1)
+			{
+				fm *= player.crouchfactor;
+				sm *= player.crouchfactor;
+				bobfactor *= player.crouchfactor;
+			}
+
+			/*forwardmove = fm * movefactor * (35 / TICRATE);
+			sidemove = sm * movefactor * (35 / TICRATE);
+
+			if (forwardmove)
+			{
+				Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
+				ForwardThrust(forwardmove, Angle);
+			}
+			if (sidemove)
+			{
+				let a = Angle - 90;
+				Bob(a, cmd.sidemove * bobfactor / 256., false);
+				Thrust(sidemove, a);
+			}*/
+
+            Vector2 wishVel = AngleToVector(angle, fm) + AngleToVector(angle - 90, sm);
+            Vector3 wishDir = (wishVel.Unit(), 0);  // TODO: move up, when flying/swimming
+            double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
+
+            //Console.Printf("wishDir = (%.2f, %.2f)", wishDir.x, wishDir.y);
+            //Console.Printf("wishSpeed = %.2f", wishSpeed);
+            //Console.Printf("friction = %.2f", friction);
+
+            Accelerate(wishDir, wishSpeed);
+
+            Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
+            Bob(Angle - 90, cmd.sidemove * bobfactor / 256., false);
+
+			if (!(player.cheats & CF_PREDICTING) && (forwardmove != 0 || sidemove != 0))
+			{
+				PlayRunning ();
+			}
+
+			if (player.cheats & CF_REVERTPLEASE)
+			{
+				player.cheats &= ~CF_REVERTPLEASE;
+				player.camera = player.mo;
+			}
+		}
+    }
+
+
+    virtual void Accelerate(Vector3 wishDir, double wishSpeed, double accel = 10)
+    {
+        double currentSpeed = vel dot wishDir;
+
+        double addSpeed = wishSpeed - currentSpeed;
+        if (addSpeed <= 0) return;
+
+        double accelSpeed = Clamp((accel / ticRate) * wishSpeed, 0, addSpeed);  // TODO: friction
+
+        vel += accelSpeed * wishDir;
+    }
+}

@@ -1,0 +1,6 @@
+Terrain NormalFriction
+{
+    Friction -0.5;
+}
+
+DefaultTerrain NormalFriction
