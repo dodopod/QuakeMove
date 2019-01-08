@@ -14,6 +14,13 @@ class QuakePlayer : DoomPlayer
     const acceleration = 10.0;
 
 
+    override void CheckJump()
+    {
+        if (player.onGround) player.jumpTics = 0;       // Enable bunnyhopping
+        if (JustPressed(BT_Jump)) Super.CheckJump();    // But don't make it automatic
+    }
+
+
     // Allow player to move/turn
     // NOTE: Called from HandleMovement, called from PlayerThink
     // NOTE: Doesn't handle
@@ -153,5 +160,10 @@ class QuakePlayer : DoomPlayer
         if (friction > normalFriction) return 1 - ((friction - normalFriction) / (1 - normalFriction));
         else if (friction < normalFriction) return 1 - ((normalFriction - friction) / normalFriction);
         else return 1;
+    }
+
+    bool JustPressed(int bt)
+    {
+        return (player.buttons & bt) && !(player.oldButtons & bt);
     }
 }
