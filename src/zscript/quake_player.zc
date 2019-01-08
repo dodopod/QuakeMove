@@ -4,14 +4,21 @@ class QuakePlayer : DoomPlayer
 {
     Default
     {
-		Speed 320;  // No idea how close Doom & Quake units are, but it feels right
+		Speed 320.0 / ticRate;  // No idea how close Doom & Quake units are, but it feels right
     }
 
 
     const maxForwardMove = 12800;
     const maxSideMove = 10240;
     const normalFriction = 0.77;
-    const acceleration = 10.0;
+    const acceleration = 10.0 / ticRate;
+
+
+    override void CheckJump()
+    {
+        if (player.onGround) player.jumpTics = 0;       // Enable bunnyhopping
+        if (JustPressed(BT_Jump)) Super.CheckJump();    // But don't make it automatic
+    }
 
 
     // Allow player to move/turn
@@ -98,7 +105,7 @@ class QuakePlayer : DoomPlayer
 
             Vector2 wishVel = AngleToVector(angle, fm) + AngleToVector(angle - 90, sm);
             Vector3 wishDir = (wishVel.Unit(), 0);  // TODO: move up, when flying/swimming
-            double wishSpeed = Clamp(wishVel.Length() * speed / ticRate, 0, speed / ticRate);   // TODO: straferun CVar
+            double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
 
             //Console.Printf("wishDir = (%.2f, %.2f)", wishDir.x, wishDir.y);
             //Console.Printf("wishSpeed = %.2f", wishSpeed);
@@ -121,6 +128,8 @@ class QuakePlayer : DoomPlayer
 				player.camera = player.mo;
 			}
 		}
+
+        //if (vel.xy.Length() > speed) Console.Printf("%.2f UPS", vel.xy.Length() * ticRate);
     }
 
 
@@ -140,7 +149,7 @@ class QuakePlayer : DoomPlayer
 
         //Console.Printf("%.2f", moveFactor);
 
-        double accelSpeed = Clamp((accel / ticRate) * wishSpeed, 0, addSpeed);
+        double accelSpeed = Clamp(accel * wishSpeed, 0, addSpeed);
 
         vel += accelSpeed * wishDir;
     }
@@ -153,5 +162,10 @@ class QuakePlayer : DoomPlayer
         if (friction > normalFriction) return 1 - ((friction - normalFriction) / (1 - normalFriction));
         else if (friction < normalFriction) return 1 - ((normalFriction - friction) / normalFriction);
         else return 1;
+    }
+
+    bool JustPressed(int bt)
+    {
+        return (player.buttons & bt) && !(player.oldButtons & bt);
     }
 }
