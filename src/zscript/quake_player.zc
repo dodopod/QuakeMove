@@ -101,6 +101,7 @@ class QuakePlayer : DoomPlayer
             //Console.Printf("wishDir = (%.2f, %.2f)", wishDir.x, wishDir.y);
             //Console.Printf("wishSpeed = %.2f", wishSpeed);
             //Console.Printf("friction = %.2f", friction);
+            //Console.Printf("vel = %.2f", vel.Length());
 
             Accelerate(wishDir, wishSpeed);
 
@@ -128,12 +129,27 @@ class QuakePlayer : DoomPlayer
         double addSpeed = wishSpeed - currentSpeed;
         if (addSpeed <= 0) return;
 
-        double friction, moveFactor;
+        /*double friction, moveFactor;
         [friction, moveFactor] = GetFriction();
-        accel *= friction > normalFriction ? moveFactor / ORIG_FRICTION_FACTOR : 1;   // Don't want stickiness
+        accel *= friction > normalFriction ? moveFactor / ORIG_FRICTION_FACTOR : 1;   // Don't want stickiness*/
+
+        double moveFactor = GetMoveFactor();
+        accel *= moveFactor;
+
+        //Console.Printf("%.2f", moveFactor);
 
         double accelSpeed = Clamp((accel / ticRate) * wishSpeed, 0, addSpeed);
 
         vel += accelSpeed * wishDir;
+    }
+
+
+    virtual double GetMoveFactor()
+    {
+        double friction = GetFriction();
+
+        if (friction > normalFriction) return 1 - ((friction - normalFriction) / (1 - normalFriction));
+        else if (friction < normalFriction) return 1 - ((normalFriction - friction) / normalFriction);
+        else return 1;
     }
 }
