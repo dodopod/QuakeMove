@@ -21,6 +21,13 @@ class QuakePlayer : DoomPlayer
     }
 
 
+    override void CheckJump()
+    {
+        if (player.onGround) player.jumpTics = 0;       // Enable bunnyhopping
+        if (JustPressed(BT_Jump)) Super.CheckJump();    // But don't make it automatic
+    }
+
+
     // Allow player to move/turn
     // NOTE: Called from HandleMovement, called from PlayerThink
     // NOTE: Doesn't handle
