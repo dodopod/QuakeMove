@@ -10,12 +10,183 @@ class QuakePlayer : DoomPlayer
 
     const maxForwardMove = 12800;
     const maxSideMove = 10240;
+    const maxUpMove = 768;
+
     const normalFriction = 0.77;
     const acceleration = 10.0 / ticRate;
+
+    enum EWaterLevel
+    {
+        WL_NotInWater   = 0,
+        WL_Feet         = 1,
+        WL_Waist        = 2,
+        WL_Eyes         = 3
+    }
+
+    enum EMoveType
+    {
+        MT_Walk,
+        MT_Swim,
+        MT_Fly,
+        MT_Fall
+    }
+
+
+    override void PlayerThink()
+    {
+        bool predicting = player.cheats & CF_Predicting;
+
+        CheckFOV();
+        if (player.inventoryTics) --player.inventoryTics;
+        CheckCheats();
+
+		if (player.playerState == PST_Dead)
+		{   // Is there a reason CheckCrouch is before this in gzdoom.pk3?
+			DeathThink();
+			return;
+		}
+		if (player.morphTics && !predicting)
+		{
+			MorphPlayerThink();
+		}
+
+		player.onGround = (pos.z <= GetZAt()) || bOnMobj || bMBFBouncer || (player.cheats & CF_NoClip2);
+        HandleMovement();
+
+        if (!predicting)
+        {
+            // NOTE: CheckUndoMorph may change PlayerPawn, and invalidate self.player (I think)
+            PlayerInfo player = self.player;
+
+            CheckEnvironment();
+			CheckUse();
+			CheckUndoMorph();
+
+			player.mo.TickPSprites();
+
+			// Other Counters
+			if (player.damagecount)	player.damagecount--;
+			if (player.bonuscount) player.bonuscount--;
+
+            // Strife-style poison
+			if (player.hazardcount)
+			{
+				player.hazardcount--;
+				if (!(level.time % player.hazardinterval) && player.hazardcount > 16 * ticRate)
+					player.mo.DamageMobj (NULL, NULL, 5, player.hazardtype);
+			}
+
+			player.mo.CheckPoison();
+			player.mo.CheckDegeneration();
+			player.mo.CheckAirSupply();
+        }
+    }
+
+
+    override void HandleMovement()
+    {
+        FixPlayerInput();
+        CheckCrouch(CheckFrozen());
+
+        CheckPitch();
+
+		// Handle movement
+		if (reactiontime)
+		{ // Player is frozen
+			reactiontime--;
+		}
+		else
+		{
+            CheckYaw();
+			MovePlayer();
+			CheckJump();
+			CheckMoveUpDown();
+		}
+
+        CalcHeight();   // Vertical bob
+    }
+
+
+    // Modifies player input in special circumstances
+    virtual void FixPlayerInput()
+    {
+        UserCmd cmd = player.cmd;
+
+        PullIn();
+
+        switch (GetMoveType())
+        {
+        case MT_Fly:
+        case MT_Swim:
+            if (IsPressed(BT_Jump))
+            {
+                cmd.buttons &= ~BT_Jump;
+                cmd.upMove = maxUpMove;
+            }
+
+            if (IsPressed(BT_Crouch))
+            {
+                cmd.buttons &= ~BT_Crouch;
+                cmd.upMove = -maxUpMove;
+            }
+
+            break;
+        }
+    }
+
+
+    // Chainsaw/Gauntlets attack auto forward motion
+    virtual void PullIn()
+    {
+        UserCmd cmd = player.cmd;
+
+		if (bJustAttacked)
+		{
+			cmd.yaw = 0;
+			cmd.forwardmove = 0xc800/2;
+			cmd.sidemove = 0;
+			bJustAttacked = false;
+		}
+    }
+
+
+    // Handle player turning
+    virtual void CheckYaw()
+    {
+        UserCmd cmd = player.cmd;
+
+        // [RH] Check for fast turn around
+		if (player.cmd.buttons & BT_TURN180 && !(player.oldbuttons & BT_TURN180))
+		{
+			player.turnticks = TURN180_TICKS;
+		}
+
+		// [RH] 180-degree turn overrides all other yaws
+		if (player.turnticks)
+		{
+			player.turnticks--;
+			Angle += (180. / TURN180_TICKS);
+		}
+		else
+		{
+			Angle += cmd.yaw * (360./65536.);
+		}
+    }
 
 
     override void CheckJump()
     {
+        // Copypasted from PlayerThink
+		if (player.jumpTics != 0)
+		{
+			player.jumpTics--;
+			if (player.onground && player.jumpTics < -18)
+			{
+				player.jumpTics = 0;
+			}
+		}
+
+
         if (player.onGround) player.jumpTics = 0;       // Enable bunnyhopping
         if (JustPressed(BT_Jump)) Super.CheckJump();    // But don't make it automatic
     }
@@ -33,19 +204,7 @@ class QuakePlayer : DoomPlayer
         let player = self.player;
 		UserCmd cmd = player.cmd;
 
-		// [RH] 180-degree turn overrides all other yaws
-		if (player.turnticks)
-		{
-			player.turnticks--;
-			Angle += (180. / TURN180_TICKS);
-		}
-		else
-		{
-			Angle += cmd.yaw * (360./65536.);
-		}
-
         // TODO: Air, water, walk move functions
-		player.onground = (pos.z <= floorz) || bOnMobj || bMBFBouncer || (player.cheats & CF_NOCLIP2);
 
 		// killough 10/98:
 		//
@@ -168,6 +327,17 @@ class QuakePlayer : DoomPlayer
     }
 
 
+    // Returns whether player is walking, swimming, etc.
+    virtual int GetMoveType()
+    {
+        if (waterLevel >= 2)    return MT_Swim;
+        if (bNoGravity)         return MT_Fly;
+        if (player.onGround)    return MT_Walk;
+        else                    return MT_Fall;
+    }
+
+
+    // Slow player down if ground is slippery/sticky
     virtual double GetMoveFactor()
     {
         double friction = GetFriction();
@@ -177,8 +347,15 @@ class QuakePlayer : DoomPlayer
         else return 1;
     }
 
+
+    bool IsPressed(int bt)
+    {
+        return player.cmd.buttons & bt;
+    }
+
+
     bool JustPressed(int bt)
     {
-        return (player.buttons & bt) && !(player.oldButtons & bt);
+        return (player.cmd.buttons & bt) && !(player.oldButtons & bt);
     }
 }
