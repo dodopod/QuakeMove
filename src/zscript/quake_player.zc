@@ -2,9 +2,18 @@
 
 class QuakePlayer : DoomPlayer
 {
+    // Aliases for Player.Forward/SideMove
+    Property ForwardMove : forwardMove1, forwardMove2;
+    Property SideMove : sideMove1, sideMove2;
+
+    Property UpMove : upMove;
+
+
     Default
     {
 		Speed 320.0 / ticRate;  // No idea how close Doom & Quake units are, but it feels right
+
+        QuakePlayer.UpMove 1;
     }
 
 
@@ -27,10 +36,13 @@ class QuakePlayer : DoomPlayer
     enum EMoveType
     {
         MT_Walk,
-        MT_Swim,
+        MT_Water,
         MT_Fly,
-        MT_Fall
+        MT_Air
     }
+
+
+    double upMove;
 
 
     override void PlayerThink()
@@ -51,7 +63,7 @@ class QuakePlayer : DoomPlayer
 			MorphPlayerThink();
 		}
 
-		player.onGround = (pos.z <= GetZAt()) || bOnMobj || bMBFBouncer || (player.cheats & CF_NoClip2);
+		player.onGround = (pos.z <= floorZ) || bOnMobj || bMBFBouncer || (player.cheats & CF_NoClip2);
         HandleMovement();
 
         if (!predicting)
@@ -108,16 +120,20 @@ class QuakePlayer : DoomPlayer
             switch (GetMoveType())
             {
             case MT_Walk:
+                //Console.Printf("walking");
                 WalkMove();
                 break;
             case MT_Fly:
+                //Console.Printf("flying");
                 FlyMove();
                 break;
-            case MT_Swim:
-                SwimMove();
+            case MT_Water:
+                //Console.Printf("swimming");
+                WaterMove();
                 break;
-            case MT_Fall:
-                FallMove();
+            case MT_Air:
+                //Console.Printf("falling");
+                AirMove();
                 break;
             }
 		}
@@ -136,7 +152,7 @@ class QuakePlayer : DoomPlayer
         switch (GetMoveType())
         {
         case MT_Fly:
-        case MT_Swim:
+        case MT_Water:
             if (IsPressed(BT_Jump))
             {
                 cmd.buttons &= ~BT_Jump;
@@ -238,11 +254,20 @@ class QuakePlayer : DoomPlayer
                 {   // Stop falling scream
                     A_StopSound(CHAN_VOICE);
                 }
+
+                FlyMove();
+                return;
             }
             else if (cmd.upMove > 0 && !(player.cheats & CF_PREDICTING))
 			{
 				let fly = FindInventory("ArtiFly");
-				if (fly) UseInventory(fly);
+				if (fly)
+                {
+                    UseInventory(fly);
+
+                    FlyMove();
+                    return;
+                }
 			}
         }
 
@@ -286,7 +311,7 @@ class QuakePlayer : DoomPlayer
         if (cmd.upMove == stopFlying)
         {
             bNoGravity = false;
-            FallMove();
+            AirMove();
             return;
         }
 
@@ -300,12 +325,10 @@ class QuakePlayer : DoomPlayer
             sm /= maxSideMove;
             um /= maxUpMove;
 
-            //Console.Printf("move = (%.2f, %.2f, %.2f)", fm, sm, um);
-
             Vector3 forward = (Cos(pitch) * Cos(angle), Cos(pitch) * Sin(angle), -Sin(pitch));
             Vector3 right = (AngleToVector(angle - 90), 0);
-            Vector3 up = (Cos(pitch - 90) * Cos(angle), Cos(pitch - 90) * Sin(angle), -Sin(pitch - 90));
-            Vector3 wishVel = fm * forward + sm * right + um * up;
+            Vector3 wishVel = fm * forward + sm * right;
+            wishVel.z += um;
 
             Vector3 wishDir = wishVel.Unit();
             double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
@@ -326,12 +349,110 @@ class QuakePlayer : DoomPlayer
     }
 
 
-    virtual void SwimMove()
-    {}
+    virtual void WaterMove()
+    {
+		UserCmd cmd = player.cmd;
+
+        if (cmd.forwardMove || cmd.sideMove || cmd.upMove)
+        {
+			double fm = cmd.forwardmove;
+			double sm = cmd.sidemove;
+            double um = cmd.upMove;
+            [fm, sm, um] = TweakSpeeds3(fm, sm, um);
+            fm /= maxForwardMove;
+            sm /= maxSideMove;
+            um /= maxUpMove;
+
+            Vector3 forward = (Cos(pitch) * Cos(angle), Cos(pitch) * Sin(angle), -Sin(pitch));
+            Vector3 right = (AngleToVector(angle - 90), 0);
+            Vector3 wishVel = fm * forward + sm * right;
+            wishVel.z += um;
+
+            Vector3 wishDir = wishVel.Unit();
+            double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
+
+            Accelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
+            BobAccelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
+
+            // Running animation
+			if (!(player.cheats & CF_PREDICTING) && (fm != 0 || sm != 0)) PlayRunning();
+
+            // Return to 1st person (from security camera?)
+			if (player.cheats & CF_RevertPlease)
+			{
+				player.cheats &= ~CF_RevertPlease;
+				player.camera = player.mo;
+			}
+        }
+    }
 
 
-    virtual void FallMove()
-    {}
+    virtual void AirMove()
+    {
+		UserCmd cmd = player.cmd;
+
+        if (cmd.upMove)
+        {
+            if (bFly || (player.cheats & CF_NOCLIP2))
+            {
+                bFly = true;
+                bNoGravity = true;
+
+                if ((Vel.Z <= -39) && !(player.cheats & CF_PREDICTING))
+                {   // Stop falling scream
+                    A_StopSound(CHAN_VOICE);
+                }
+
+                FlyMove();
+                return;
+            }
+            else if (cmd.upMove > 0 && !(player.cheats & CF_PREDICTING))
+			{
+				let fly = FindInventory("ArtiFly");
+				if (fly)
+                {
+                    UseInventory(fly);
+
+                    FlyMove();
+                    return;
+                }
+			}
+        }
+
+        if (cmd.forwardMove || cmd.sideMove)
+        {
+			double fm = cmd.forwardmove;
+			double sm = cmd.sidemove;
+			[fm, sm] = TweakSpeeds(fm, sm);
+            fm /= maxForwardMove;
+            sm /= maxSideMove;
+
+            Vector3 forward = (AngleToVector(angle), 0);
+            Vector3 right = (AngleToVector(angle - 90), 0);
+            Vector3 wishVel = fm * forward + sm * right;
+
+            //Console.Printf("wishVel = (%.2f, %.2f, %.2f)", wishVel.x, wishVel.y, wishVel.z);
+
+            Vector3 wishDir = wishVel.Unit();
+            double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
+
+            double accel = GetMoveFactor() * acceleration;
+            if (!waterLevel) accel *= level.airControl;     // So that swimming works
+
+            Accelerate(wishDir, wishSpeed, accel);
+            BobAccelerate(wishDir, wishSpeed, accel);
+
+            // Running animation
+			if (!(player.cheats & CF_PREDICTING) && (fm != 0 || sm != 0)) PlayRunning();
+
+            // Return to 1st person (from security camera?)
+			if (player.cheats & CF_RevertPlease)
+			{
+				player.cheats &= ~CF_RevertPlease;
+				player.camera = player.mo;
+			}
+        }
+    }
 
 
     // Allow player to move/turn
@@ -448,8 +569,10 @@ class QuakePlayer : DoomPlayer
 
 
     virtual double, double, double TweakSpeeds3(double forward, double side, double up)
-    {   // TODO
+    {
         [forward, side] = TweakSpeeds(forward, side);
+
+        up *= upMove;
 
         return forward, side, up;
     }
@@ -493,10 +616,10 @@ class QuakePlayer : DoomPlayer
     // Returns whether player is walking, swimming, etc.
     virtual int GetMoveType()
     {
-        if (waterLevel >= 2)    return MT_Swim;
-        if (bNoGravity)         return MT_Fly;
-        if (player.onGround)    return MT_Walk;
-        else                    return MT_Fall;
+        if (waterLevel > WL_Feet)   return MT_Water;
+        if (bNoGravity)             return MT_Fly;
+        if (player.onGround)        return MT_Walk;
+        else                        return MT_Air;
     }
 
 
