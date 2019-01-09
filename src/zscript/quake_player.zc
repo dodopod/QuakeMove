@@ -103,8 +103,21 @@ class QuakePlayer : DoomPlayer
 				Thrust(sidemove, a);
 			}*/
 
-            Vector2 wishVel = AngleToVector(angle, fm) + AngleToVector(angle - 90, sm);
-            Vector3 wishDir = (wishVel.Unit(), 0);  // TODO: move up, when flying/swimming
+            Vector3 forward;
+            if ((waterlevel || bNoGravity) && Pitch != 0 && !player.GetClassicFlight())
+            {   // Fly/swim up/down
+                forward = (Cos(pitch) * Cos(angle), Cos(pitch) * Sin(angle), -Sin(pitch));
+            }
+            else
+            {
+                forward = (AngleToVector(angle), 0);
+            }
+
+            Vector3 right = (AngleToVector(angle - 90), 0);
+
+            //Vector2 wishVel = AngleToVector(angle, fm) + AngleToVector(angle - 90, sm);
+            Vector3 wishVel = fm * forward + sm * right;
+            Vector3 wishDir = wishVel.Unit();  // TODO: move up, when flying/swimming
             double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
 
             //Console.Printf("wishDir = (%.2f, %.2f)", wishDir.x, wishDir.y);
