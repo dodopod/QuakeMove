@@ -467,6 +467,14 @@ class QuakePlayer : DoomPlayer
 
         double accelSpeed = Clamp(accel * wishSpeed, 0, addSpeed);
 
+        if (!CVar.FindCVar('g_strafejumping').GetBool())
+        {
+            Vector3 newVel = vel + accelSpeed * wishDir;
+            newVel.z = 0;
+
+            if (newVel.Length() > wishSpeed) return;
+        }
+
         vel += accelSpeed * wishDir;
     }
 
