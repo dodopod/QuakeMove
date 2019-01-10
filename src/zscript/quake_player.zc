@@ -155,13 +155,13 @@ class QuakePlayer : DoomPlayer
         case MT_Water:
             if (IsPressed(BT_Jump))
             {
-                cmd.buttons &= ~BT_Jump;
+                //cmd.buttons &= ~BT_Jump;
                 cmd.upMove = maxUpMove;
             }
 
             if (IsPressed(BT_Crouch))
             {
-                cmd.buttons &= ~BT_Crouch;
+                //cmd.buttons &= ~BT_Crouch;
                 cmd.upMove = -maxUpMove;
             }
 
@@ -243,6 +243,7 @@ class QuakePlayer : DoomPlayer
     {
 		UserCmd cmd = player.cmd;
 
+        // Start flying
         if (cmd.upMove)
         {
             if (bFly || (player.cheats & CF_NOCLIP2))
@@ -311,6 +312,7 @@ class QuakePlayer : DoomPlayer
         if (cmd.upMove == stopFlying)
         {
             bNoGravity = false;
+            cmd.upMove = 0; // To avoid AirMove calling FlyMove again
             AirMove();
             return;
         }
@@ -368,6 +370,9 @@ class QuakePlayer : DoomPlayer
             Vector3 wishVel = fm * forward + sm * right;
             wishVel.z += um;
 
+            if (waterLevel == WL_Feet && wishVel.z > 0) wishVel.z = 0;   // Swim on surface
+            if (wishVel.Length() == 0) return;
+
             Vector3 wishDir = wishVel.Unit();
             double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
 
@@ -391,6 +396,7 @@ class QuakePlayer : DoomPlayer
     {
 		UserCmd cmd = player.cmd;
 
+        // Start flying
         if (cmd.upMove)
         {
             if (bFly || (player.cheats & CF_NOCLIP2))
@@ -431,14 +437,10 @@ class QuakePlayer : DoomPlayer
             Vector3 right = (AngleToVector(angle - 90), 0);
             Vector3 wishVel = fm * forward + sm * right;
 
-            //Console.Printf("wishVel = (%.2f, %.2f, %.2f)", wishVel.x, wishVel.y, wishVel.z);
-
             Vector3 wishDir = wishVel.Unit();
             double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
 
-            double accel = GetMoveFactor() * acceleration;
-            if (!waterLevel) accel *= level.airControl;     // So that swimming works
-
+            double accel = GetMoveFactor() * acceleration * level.airControl;
             Accelerate(wishDir, wishSpeed, accel);
             BobAccelerate(wishDir, wishSpeed, accel);
 
@@ -615,11 +617,11 @@ class QuakePlayer : DoomPlayer
 
     // Returns whether player is walking, swimming, etc.
     virtual int GetMoveType()
-    {
-        if (waterLevel > WL_Feet)   return MT_Water;
-        if (bNoGravity)             return MT_Fly;
-        if (player.onGround)        return MT_Walk;
-        else                        return MT_Air;
+    {   // NOTE: Order is important
+        if (bNoGravity)         return MT_Fly;      // So we can take off when on ground
+        if (player.onGround)    return MT_Walk;     // So we can walk in shallow water
+        if (waterLevel)         return MT_Water;
+        else                    return MT_Air;
     }
 
 
