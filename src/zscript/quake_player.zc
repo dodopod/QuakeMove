@@ -11,19 +11,22 @@ class QuakePlayer : DoomPlayer
 
     Default
     {
-		Speed 320.0 / ticRate;  // No idea how close Doom & Quake units are, but it feels right
+		Speed 320.0 / ticRate / normalFriction;  // No idea how close Doom & Quake units are, but it feels right
 
         QuakePlayer.UpMove 1;
     }
 
+
+    const straferunningCVar = "G_Straferunning";
+    const strafejumpingCVar = "G_Strafejumping";
 
     const maxForwardMove = 12800;
     const maxSideMove = 10240;
     const maxUpMove = 768;
     const stopFlying = -32768;
 
-    const normalFriction = 0.77;
-    const acceleration = 10.0 / ticRate;
+    const normalFriction = 0.7656;
+    const acceleration = 10.0 / ticRate / normalFriction;
 
     enum EWaterLevel
     {
@@ -276,7 +279,9 @@ class QuakePlayer : DoomPlayer
             Vector3 wishVel = fm * forward + sm * right;
 
             Vector3 wishDir = wishVel.Unit();
-            double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
+            double wishSpeed = wishVel.Length() * speed;
+            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
+            if (!canStraferun) wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);
 
             Accelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
             BobAccelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
@@ -324,7 +329,9 @@ class QuakePlayer : DoomPlayer
             wishVel.z += um;
 
             Vector3 wishDir = wishVel.Unit();
-            double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
+            double wishSpeed = wishVel.Length() * speed;
+            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
+            if (!canStraferun) wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);
 
             Accelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
             BobAccelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
@@ -365,7 +372,9 @@ class QuakePlayer : DoomPlayer
             if (wishVel.Length() == 0) return;
 
             Vector3 wishDir = wishVel.Unit();
-            double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
+            double wishSpeed = wishVel.Length() * speed;
+            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
+            if (!canStraferun) wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);
 
             Accelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
             BobAccelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
@@ -429,7 +438,9 @@ class QuakePlayer : DoomPlayer
             Vector3 wishVel = fm * forward + sm * right;
 
             Vector3 wishDir = wishVel.Unit();
-            double wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);   // TODO: straferun CVar
+            double wishSpeed = wishVel.Length() * speed;
+            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
+            if (!canStraferun) wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);
 
             double accel = GetMoveFactor() * acceleration * level.airControl;
             Accelerate(wishDir, wishSpeed, accel);
@@ -460,14 +471,28 @@ class QuakePlayer : DoomPlayer
 
     virtual void Accelerate(Vector3 wishDir, double wishSpeed, double accel)
     {
-        double currentSpeed = vel dot wishDir;
+        if (CVar.FindCVar(strafejumpingCVar).GetBool())
+        {
+            double currentSpeed = vel dot wishDir;
 
-        double addSpeed = wishSpeed - currentSpeed;
-        if (addSpeed <= 0) return;
+            double addSpeed = wishSpeed - currentSpeed;
+            if (addSpeed <= 0) return;
 
-        double accelSpeed = Clamp(accel * wishSpeed, 0, addSpeed);
+            double accelSpeed = Min(accel * wishSpeed, addSpeed);
 
-        vel += accelSpeed * wishDir;
+            vel += accelSpeed * wishDir;
+        }
+        else
+        {   // Disabled code in Quake 3
+            Vector3 pushDir = wishSpeed * wishDir - vel;
+            double pushLen = pushDir.Length();
+            if (pushLen == 0) return;
+            pushDir = pushDir.Unit();
+
+            double canPush = Min(accel * wishSpeed, PushLen);
+
+            vel += canPush * pushDir;
+        }
     }
 
 
