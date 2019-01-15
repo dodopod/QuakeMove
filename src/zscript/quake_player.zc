@@ -50,6 +50,8 @@ class QuakePlayer : DoomPlayer
 
     override void PlayerThink()
     {
+        Console.Printf("%d", vel.xy.Length() * ticRate);
+
         bool predicting = player.cheats & CF_Predicting;
 
         CheckFOV();
