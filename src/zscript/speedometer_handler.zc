@@ -1,0 +1,16 @@
+class SpeedometerHandler : EventHandler
+{
+    override void RenderOverlay(RenderEvent e)
+    {
+        PlayerInfo player = players[consolePlayer];
+        bool shouldDraw = CVar.GetCVar('CG_Speedometer', player).GetBool();
+        if (shouldDraw)
+        {
+            int spd = player.mo.vel.Length() * Thinker.ticRate;
+            String text = StringStruct.Format("%d UPS", spd);
+            Vector2 pos = (Screen.GetWidth() - cleanXFac * smallFont.StringWidth(text) - 4 * cleanXFac, 2 * cleanYFac);
+
+            Screen.DrawText(smallFont, Font.CR_Untranslated, pos.x, pos.y, text, DTA_CleanNoMove, true);
+        }
+    }
+}
