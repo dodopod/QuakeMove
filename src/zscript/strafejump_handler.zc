@@ -1,0 +1,222 @@
+class StrafejumpHandler : EventHandler
+{
+    const helpCVar = "PweaseHewpMeStwafejumpMommy";
+    const strafejumpCVar = "G_Strafejumping";
+    const onMsg = "\c*Crash: Fine, %s, but you have to learn to ride without training wheels someday.";
+    const offMsg = "\c*Crash: Aww, you're finally growing up.";
+    const cantMsg = "\c*Crash: Sorry kid, can't help ya.";
+    const msgDelay = Thinker.ticRate;
+    const chatSound = "misc/chat";
+    const defaultTurnTics = 8;
+    const jumpCmd = "+jump";
+    const forwardCmd = "+forward";
+    const maxSideMove = 10240;
+    const yawPerDegree = 65536.0/360;
+    const ticRate = 35;
+    const normalFriction = 0.7656;
+    const acceleration = 10.0 / ticRate / normalFriction;
+
+
+    ui bool initialized;
+    ui bool helping;
+    ui int msgTics;
+    ui String msg;
+    ui bool isJumpDown;
+    ui bool isForwardDown;
+    ui int turnTics;
+    ui double turnAngle;
+    ui bool turned;
+    ui bool turnRight;
+    ui double angle;
+
+
+    override void UITick()
+    {
+        if (!initialized) Init();
+
+        CheckCVar();
+        PrintMsg();
+
+        //Strafejump();
+
+        TurnTick();
+
+        let mo = players[consolePlayer].mo;
+        //Console.Printf("vel = %.2f", mo.vel.xy.Length() * Thinker.ticRate);
+        Console.Printf("nextVel = %.2f", Accelerate((Actor.AngleToVector(mo.angle), 0), mo.speed) * ticRate * normalFriction);
+        //Console.Printf("angle = %.2f", mo.angle);
+    }
+
+    override bool InputProcess(InputEvent e)
+    {
+        CheckKeys(e);
+
+        return false;
+    }
+
+    ui void Init()
+    {
+        PlayerInfo player = players[consolePlayer];
+        helping = CVar.GetCVar(helpCVar, player).GetBool();
+        msgTics = -1;
+        initialized = true;
+        isJumpDown = false;
+    }
+
+    ui void CheckCVar()
+    {
+        PlayerInfo player = players[consolePlayer];
+        bool shouldHelp = CVar.GetCVar(helpCVar, player).GetBool();
+        bool canHelp = CVar.FindCVar(strafejumpCVar).GetBool();
+
+        if (!canHelp)
+        {
+            helping = false;
+
+            if (shouldHelp)
+            {
+                msgTics = msgDelay;
+                msg = cantMsg;
+
+                CVar.GetCVar(helpCVar, player).SetBool(false);
+            }
+        }
+        else if (!helping && shouldHelp)
+        {
+            helping = true;
+            msgTics = msgDelay;
+            msg = onMsg;
+        }
+        else if (helping && !shouldHelp)
+        {
+            helping = false;
+            msgTics = msgDelay;
+            msg = StringStruct.Format(offMsg, players[consolePlayer].GetUserName());
+        }
+    }
+
+    ui void PrintMsg()
+    {
+        if (msgTics == 0)
+        {
+            PlayerInfo player = players[consolePlayer];
+
+            Console.Printf(msg);
+
+            player.mo.A_PlaySound(chatSound, CHAN_Body, 1, ATTN_None, true);
+        }
+        if (msgTics >= 0) --msgTics;
+    }
+
+    ui void CheckKeys(InputEvent e)
+    {
+        switch (e.type)
+        {
+        case InputEvent.Type_KeyDown:
+            if (IsKeyForCommand(e.keyScan, jumpCmd)) isJumpDown = true;
+            else if (IsKeyForCommand(e.keyScan, forwardCmd)) isForwardDown = true;
+            break;
+        case InputEvent.Type_KeyUp:
+            if (IsKeyForCommand(e.keyScan, jumpCmd)) isJumpDown = false;
+            else if (IsKeyForCommand(e.keyScan, forwardCmd)) isForwardDown = false;
+            break;
+        }
+    }
+
+    ui void Strafejump()
+    {
+        PlayerInfo player = players[consolePlayer];
+        if (isJumpDown && isForwardDown)
+        {
+            // Make game think we're releasing jump b/w jumps
+            if (!IsOnGround(player.mo)) player.cmd.buttons &= ~BT_Jump;
+            else
+            {
+                turnRight = !turnRight;    // Switch directions, each jump
+                turned = false;
+                Console.Printf("vel = %.2f", player.mo.vel.xy.Length() * Thinker.ticRate);
+            }
+
+            // Strafe, ofc
+            player.cmd.sideMove = maxSideMove * (turnRight ? 1 : -1);
+
+            // Set intended direction
+            if (!angle) angle = player.mo.angle;
+
+            if (!turned) TurnPlayer(FindOptimalAngle(player.mo, angle, turnRight));
+        }
+        else
+        {
+            turned = true;
+            angle = 0;
+        }
+    }
+
+    ui void TurnPlayer(double ang, int tics = defaultTurnTics)
+    {
+        turnTics = tics;
+        turnAngle = ang;
+        turned = true;
+
+        //Console.Printf("%.2f", ang);
+    }
+
+    ui void TurnTick()
+    {
+        PlayerInfo player = players[consolePlayer];
+        if (turnTics > 0)
+        {
+            //Console.Printf("%.2f", (turnAngle - player.mo.angle) / turnTics);
+            player.cmd.yaw = (turnAngle - player.mo.angle) * yawPerDegree / turnTics--;
+        }
+    }
+
+    ui bool IsKeyForCommand(int keyScan, String cmd)
+    {
+        int k1, k2;
+        [k1, k2] = Bindings.GetKeysForCommand(cmd);
+        return keyScan == k1 || keyScan == k2;
+    }
+
+    ui bool IsOnGround(Actor mo)
+    {
+        return mo.pos.z <= mo.floorZ;
+    }
+
+    ui double FindOptimalAngle(Actor mo, double intended, bool right)
+    {
+        double bestAngle;
+        double bestVel = 0;
+
+        for (double i = 0; i < 90; ++i)
+        {
+            double vel = Accelerate((Actor.AngleToVector(intended + (right ? -i : i)), 0), mo.speed);
+
+            if (vel > bestVel)
+            {
+                bestAngle = intended + (right ? -(i+4) : i+4);
+                bestVel = vel;
+            }
+        }
+
+        Console.Printf("bestAngle = %.2f", bestAngle - intended);
+        Console.Printf("bestVel = %.2f", bestVel * Thinker.ticRate);
+
+        return bestAngle;
+    }
+
+    ui double Accelerate(Vector3 wishDir, double wishSpeed, double accel = QuakePlayer.acceleration)
+    {
+        Vector3 vel = players[consolePlayer].mo.vel;
+        double currentSpeed = vel dot wishDir;
+
+        double addSpeed = wishSpeed - currentSpeed;
+        if (addSpeed <= 0) return 0;
+
+        double accelSpeed = Min(accel * wishSpeed, addSpeed);
+
+        Vector3 nextVel = vel + accelSpeed * wishDir;
+
+        return nextVel.xy.Length() * .77;
+    }
+}
