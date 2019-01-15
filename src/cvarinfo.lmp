@@ -1,0 +1,2 @@
+server bool G_StrafeJumping = true;
+server bool G_StrafeRunning = false;
