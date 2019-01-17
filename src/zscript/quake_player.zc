@@ -11,7 +11,7 @@ class QuakePlayer : DoomPlayer
 
     Default
     {
-		Speed 320.0 / ticRate / normalFriction;  // No idea how close Doom & Quake units are, but it feels right
+		Speed 320.0 / ticRate;  // No idea how close Doom & Quake units are, but it feels right
 
         QuakePlayer.UpMove 1;
     }
@@ -106,7 +106,6 @@ class QuakePlayer : DoomPlayer
 
         CheckPitch();
 
-		// Handle movement
 		if (reactiontime)
 		{   // Player is frozen
 			reactiontime--;
@@ -115,6 +114,7 @@ class QuakePlayer : DoomPlayer
 		{
             CheckYaw();
 
+            vel *= GetFriction();   // Quake applies friction before movement
             switch (GetMoveType())
             {
             case MT_Walk:
@@ -130,6 +130,7 @@ class QuakePlayer : DoomPlayer
                 AirMove();
                 break;
             }
+            vel /= GetFriction();
 		}
 
         CalcHeight();   // Vertical bob
@@ -229,7 +230,11 @@ class QuakePlayer : DoomPlayer
 		}
 
         if (player.onGround) player.jumpTics = 0;       // Enable bunnyhopping
-        if (JustPressed(BT_Jump)) Super.CheckJump();    // But don't make it automatic
+        if (JustPressed(BT_Jump))                       // But don't make it automatic
+        {
+            vel /= GetFriction();   // No friction on same tic as jump (makes strafejumping easier)
+            Super.CheckJump();
+        }
     }
 
 
@@ -266,6 +271,8 @@ class QuakePlayer : DoomPlayer
 			}
         }
 
+        CheckJump();
+
         if (cmd.forwardMove || cmd.sideMove)
         {
 			double fm = cmd.forwardmove;
@@ -296,8 +303,6 @@ class QuakePlayer : DoomPlayer
 				player.camera = player.mo;
 			}
         }
-
-        CheckJump();
     }
 
 
