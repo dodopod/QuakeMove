@@ -25,7 +25,7 @@ class QuakePlayer : DoomPlayer
     const maxUpMove = 768;
     const stopFlying = -32768;
 
-    const normalFriction = 0.7656;
+    const normalFriction = 0.8125;
     const acceleration = 10.0 / ticRate / normalFriction;
 
     enum EWaterLevel
@@ -50,8 +50,6 @@ class QuakePlayer : DoomPlayer
 
     override void PlayerThink()
     {
-        Console.Printf("%d", vel.xy.Length() * ticRate);
-
         bool predicting = player.cheats & CF_Predicting;
 
         CheckFOV();
