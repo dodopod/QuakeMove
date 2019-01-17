@@ -19,7 +19,7 @@ class SpeedometerHandler : EventHandler
             dt += e.fracTic;
             if (dt >= updateTics)
             {
-                spd = player.mo.vel.Length() * Thinker.ticRate;
+                spd = player.mo.vel.xy.Length() * Thinker.ticRate;
                 dt = 0;
             }
 
