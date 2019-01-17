@@ -5,7 +5,7 @@ class SpeedometerHandler : EventHandler
     const xPad = 4;
     const yPad = 2;
     const col = Font.CR_Untranslated;
-    const updateTics = 8;
+    const updateTics = 4;
 
     ui double dt;
     ui int spd;
