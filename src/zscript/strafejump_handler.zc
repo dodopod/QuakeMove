@@ -7,7 +7,7 @@ class StrafejumpHandler : EventHandler
     const cantMsg = "\c*Crash: Uhh, you realize strafejumping is disabled, right?";
     const msgDelay = Thinker.ticRate;
     const chatSound = "misc/chat";
-    const defaultTurnTics = 16;
+    const defaultTurnTics = 8;
     const jumpCmd = "+jump";
     const forwardCmd = "+forward";
     const maxSideMove = 10240;
@@ -157,6 +157,8 @@ class StrafejumpHandler : EventHandler
         PlayerInfo player = players[i];
         bool onGround = player.mo.pos.z <= player.mo.GetZAt();
 
+        //player.cmd.sideMove = turnRight[i] ? maxSideMove : -maxSideMove;
+
         if (!onGround)
         {
             player.cmd.buttons &= ~BT_Jump;  // Release jump while in air
@@ -190,7 +192,7 @@ class StrafejumpHandler : EventHandler
         double bestAngle;
         double bestSpeed;
 
-        for (double i = 0; i < 90; i += 0.25)
+        for (double i = 0; i < 90; ++i)
         {
             mo.angle = intended + (right ? -i : i);
             mo.WalkMove();
