@@ -2,3 +2,5 @@ user bool CG_Speedometer = false;
 
 server bool G_StrafeJumping = true;
 server bool G_StrafeRunning = false;
+
+user noarchive cheat bool HelpMeMommy = false;
