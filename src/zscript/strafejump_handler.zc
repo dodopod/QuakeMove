@@ -1,13 +1,13 @@
 class StrafejumpHandler : EventHandler
 {
-    const helpCVar = "PweaseHewpMeStwafejumpMommy";
+    const helpCVar = "HelpMeMommy";
     const strafejumpCVar = "G_Strafejumping";
     const onMsg = "\c*Crash: Fine, %s, but you have to learn to ride without training wheels someday.";
     const offMsg = "\c*Crash: Aww, you're finally growing up.";
-    const cantMsg = "\c*Crash: Sorry kid, can't help ya.";
+    const cantMsg = "\c*Crash: Uhh, you realize strafejumping is disabled, right?";
     const msgDelay = Thinker.ticRate;
     const chatSound = "misc/chat";
-    const defaultTurnTics = 8;
+    const defaultTurnTics = 16;
     const jumpCmd = "+jump";
     const forwardCmd = "+forward";
     const maxSideMove = 10240;
@@ -23,11 +23,6 @@ class StrafejumpHandler : EventHandler
     ui String msg;
     ui bool isJumpDown;
     ui bool isForwardDown;
-    ui int turnTics;
-    ui double turnAngle;
-    ui bool turned;
-    ui bool turnRight;
-    ui double angle;
 
 
     override void UITick()
@@ -37,14 +32,7 @@ class StrafejumpHandler : EventHandler
         CheckCVar();
         PrintMsg();
 
-        //Strafejump();
-
-        TurnTick();
-
-        let mo = players[consolePlayer].mo;
-        //Console.Printf("vel = %.2f", mo.vel.xy.Length() * Thinker.ticRate);
-        Console.Printf("nextVel = %.2f", Accelerate((Actor.AngleToVector(mo.angle), 0), mo.speed) * ticRate * normalFriction);
-        //Console.Printf("angle = %.2f", mo.angle);
+        CheckStrafejump();
     }
 
     override bool InputProcess(InputEvent e)
@@ -59,15 +47,17 @@ class StrafejumpHandler : EventHandler
         PlayerInfo player = players[consolePlayer];
         helping = CVar.GetCVar(helpCVar, player).GetBool();
         msgTics = -1;
-        initialized = true;
         isJumpDown = false;
+        isForwardDown = false;
+
+        initialized = true;
     }
 
     ui void CheckCVar()
     {
         PlayerInfo player = players[consolePlayer];
         bool shouldHelp = CVar.GetCVar(helpCVar, player).GetBool();
-        bool canHelp = CVar.FindCVar(strafejumpCVar).GetBool();
+        bool canHelp = CVar.FindCVar(strafejumpCVar).GetBool() && QuakePlayer(player.mo);
 
         if (!canHelp)
         {
@@ -76,7 +66,7 @@ class StrafejumpHandler : EventHandler
             if (shouldHelp)
             {
                 msgTics = msgDelay;
-                msg = cantMsg;
+                msg = StringStruct.Format(cantMsg, players[consolePlayer].GetUserName());
 
                 CVar.GetCVar(helpCVar, player).SetBool(false);
             }
@@ -85,7 +75,7 @@ class StrafejumpHandler : EventHandler
         {
             helping = true;
             msgTics = msgDelay;
-            msg = onMsg;
+            msg = StringStruct.Format(onMsg, players[consolePlayer].GetUserName());
         }
         else if (helping && !shouldHelp)
         {
@@ -123,52 +113,9 @@ class StrafejumpHandler : EventHandler
         }
     }
 
-    ui void Strafejump()
+    ui void CheckStrafejump()
     {
-        PlayerInfo player = players[consolePlayer];
-        if (isJumpDown && isForwardDown)
-        {
-            // Make game think we're releasing jump b/w jumps
-            if (!IsOnGround(player.mo)) player.cmd.buttons &= ~BT_Jump;
-            else
-            {
-                turnRight = !turnRight;    // Switch directions, each jump
-                turned = false;
-                Console.Printf("vel = %.2f", player.mo.vel.xy.Length() * Thinker.ticRate);
-            }
-
-            // Strafe, ofc
-            player.cmd.sideMove = maxSideMove * (turnRight ? 1 : -1);
-
-            // Set intended direction
-            if (!angle) angle = player.mo.angle;
-
-            if (!turned) TurnPlayer(FindOptimalAngle(player.mo, angle, turnRight));
-        }
-        else
-        {
-            turned = true;
-            angle = 0;
-        }
-    }
-
-    ui void TurnPlayer(double ang, int tics = defaultTurnTics)
-    {
-        turnTics = tics;
-        turnAngle = ang;
-        turned = true;
-
-        //Console.Printf("%.2f", ang);
-    }
-
-    ui void TurnTick()
-    {
-        PlayerInfo player = players[consolePlayer];
-        if (turnTics > 0)
-        {
-            //Console.Printf("%.2f", (turnAngle - player.mo.angle) / turnTics);
-            player.cmd.yaw = (turnAngle - player.mo.angle) * yawPerDegree / turnTics--;
-        }
+        EventHandler.SendNetworkEvent("strafejump", (helping && isJumpDown && isForwardDown));
     }
 
     ui bool IsKeyForCommand(int keyScan, String cmd)
@@ -183,40 +130,101 @@ class StrafejumpHandler : EventHandler
         return mo.pos.z <= mo.floorZ;
     }
 
-    ui double FindOptimalAngle(Actor mo, double intended, bool right)
+
+    bool isStrafejumping[maxPlayers];
+    bool hasTurned[maxPlayers];
+    bool turnRight[maxPlayers];
+    double turnAngle[maxPlayers];
+    int turnTics[maxPlayers];
+
+
+    override void WorldTick()
     {
-        double bestAngle;
-        double bestVel = 0;
-
-        for (double i = 0; i < 90; ++i)
+        for (int i = 0; i < maxPlayers; ++i)
         {
-            double vel = Accelerate((Actor.AngleToVector(intended + (right ? -i : i)), 0), mo.speed);
+            if (isStrafejumping[i]) Strafejump(i);
+            if (turnTics[i]) TurnTick(i);
+        }
+    }
 
-            if (vel > bestVel)
+    override void NetworkProcess(ConsoleEvent e)
+    {
+        if (e.name ~== "strafejump") isStrafejumping[e.player] = e.args[0];
+    }
+
+    void Strafejump(int i)
+    {
+        PlayerInfo player = players[i];
+        bool onGround = player.mo.pos.z <= player.mo.GetZAt();
+
+        if (!onGround)
+        {
+            player.cmd.buttons &= ~BT_Jump;  // Release jump while in air
+
+            if (!hasTurned[i])
             {
-                bestAngle = intended + (right ? -(i+4) : i+4);
-                bestVel = vel;
+                Vector3 velUnit = player.mo.vel.Unit();
+                double intended = VectorAngle(velUnit.x, velUnit.y);
+                double angle = FindOptimalAngle(QuakePlayer(player.mo), intended, turnRight[i]);
+
+                TurnPlayer(i, angle);
+                hasTurned[i] = true;
             }
         }
+        else
+        {
+            hasTurned[i] = false;
+            turnRight[i] = !turnRight[i];
+        }
+    }
 
-        Console.Printf("bestAngle = %.2f", bestAngle - intended);
-        Console.Printf("bestVel = %.2f", bestVel * Thinker.ticRate);
+    double FindOptimalAngle(QuakePlayer mo, double intended, bool right)
+    {
+        Vector3 realVel = mo.vel;
+        double realAngle = mo.angle;
+        double realZ = mo.pos.z;
+
+        mo.vel.z = 0;
+        mo.SetZ(mo.GetZAt());
+
+        double bestAngle;
+        double bestSpeed;
+
+        for (double i = 0; i < 90; i += 0.25)
+        {
+            mo.angle = intended + (right ? -i : i);
+            mo.WalkMove();
+
+            double speed = mo.vel.xy dot Actor.AngleToVector(intended);
+
+            if (speed > bestSpeed)
+            {
+                bestAngle = mo.angle;
+                bestSpeed = speed;
+            }
+
+            mo.vel.xy = realVel.xy;
+            mo.angle = realAngle;
+        }
+
+        mo.SetZ(realZ);
+        mo.vel = realVel;
 
         return bestAngle;
     }
 
-    ui double Accelerate(Vector3 wishDir, double wishSpeed, double accel = QuakePlayer.acceleration)
+    void TurnPlayer(int i, double angle, int tics = defaultTurnTics)
     {
-        Vector3 vel = players[consolePlayer].mo.vel;
-        double currentSpeed = vel dot wishDir;
+        turnAngle[i] = angle;
+        turnTics[i] = tics;
+    }
 
-        double addSpeed = wishSpeed - currentSpeed;
-        if (addSpeed <= 0) return 0;
+    void TurnTick(int i)
+    {
+        double angle = players[i].mo.angle;
+        double dt = (turnAngle[i] - angle) / turnTics[i];
 
-        double accelSpeed = Min(accel * wishSpeed, addSpeed);
-
-        Vector3 nextVel = vel + accelSpeed * wishDir;
-
-        return nextVel.xy.Length() * .77;
+        players[i].mo.angle += dt;
+        --turnTics[i];
     }
 }
