@@ -1,5 +1,5 @@
 version "3.7"
 
-#include "zscript/quake_player.zc"
-#include "zscript/speedometer_handler.zc"
-#include "zscript/strafejump_handler.zc"
+#include "zscript/quake_move/quake_player.zc"
+#include "zscript/quake_move/speedometer_handler.zc"
+#include "zscript/quake_move/strafejump_handler.zc"
