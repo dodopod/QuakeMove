@@ -13,7 +13,7 @@ class QuakePlayer : DoomPlayer
     {
 		Speed 320.0 / ticRate;  // No idea how close Doom & Quake units are, but it feels right
 
-        QuakePlayer.UpMove 1;
+        QuakePlayer.UpMove 0.5;
     }
 
 
@@ -516,11 +516,13 @@ class QuakePlayer : DoomPlayer
 
     // Returns whether player is walking, swimming, etc.
     virtual int GetMoveType()
-    {   // NOTE: Order is important
-        if (bNoGravity)         return MT_Fly;      // So we can take off when on ground
-        if (player.onGround)    return MT_Walk;     // So we can walk in shallow water
-        if (waterLevel)         return MT_Water;
-        else                    return MT_Air;
+    {
+        if (bNoGravity)             return MT_Fly;
+        if (waterLevel > WL_Feet)   return MT_Water;    // In Quake, you can only swim when waist deep
+        if (waterLevel == WL_Feet                       // In Doom, you can practically walk on water
+            && !player.onGround)    return MT_Water;    // This is a compromise, so you can jump in shallow water
+        if (player.onGround)        return MT_Walk;
+        else                        return MT_Air;
     }
 
 
