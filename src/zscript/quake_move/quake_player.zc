@@ -116,9 +116,6 @@ class QuakePlayer : DoomPlayer
 		{
             CheckYaw();
 
-            vel *= GetFriction();   // Quake applies friction before movement
-            player.vel *= GetFriction();
-
             switch (GetMoveType())
             {
             case MT_Walk:
@@ -275,6 +272,7 @@ class QuakePlayer : DoomPlayer
         }
 
         CheckJump();
+        Friction();
 
         if (cmd.forwardMove || cmd.sideMove)
         {
@@ -321,6 +319,8 @@ class QuakePlayer : DoomPlayer
             return;
         }
 
+        Friction();
+
         if (cmd.forwardMove || cmd.sideMove || cmd.upMove)
         {
 			double fm = cmd.forwardmove;
@@ -360,6 +360,8 @@ class QuakePlayer : DoomPlayer
     virtual void WaterMove()
     {
 		UserCmd cmd = player.cmd;
+
+        Friction();
 
         if (cmd.forwardMove || cmd.sideMove || cmd.upMove)
         {
@@ -433,6 +435,8 @@ class QuakePlayer : DoomPlayer
 			}
         }
 
+        Friction();
+
         if (cmd.forwardMove || cmd.sideMove)
         {
 			double fm = cmd.forwardmove;
@@ -474,6 +478,13 @@ class QuakePlayer : DoomPlayer
         up *= upMove;
 
         return forward, side, up;
+    }
+
+
+    virtual void Friction()
+    {
+        vel *= GetFriction();
+        player.vel *= GetFriction();
     }
 
 
