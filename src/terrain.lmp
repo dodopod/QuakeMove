@@ -3,4 +3,4 @@ Terrain NormalFriction
     Friction 0;
 }
 
-DefaultTerrain NormalFriction
+//DefaultTerrain NormalFriction

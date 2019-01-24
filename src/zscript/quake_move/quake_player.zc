@@ -30,6 +30,17 @@ class QuakePlayer : DoomPlayer
     const normalFriction = 0.8125;
     const acceleration = 10.0 / ticRate / normalFriction;
 
+    const stopSpeed = 100.0 / ticRate;
+
+    const groundAccelerate = 10.0 / ticRate;
+    const airAccelerate = 1.0 / ticRate;
+    const waterAccelerate = 4.0 / ticRate;
+    const flyAccelerate = 8.0 / ticRate;
+
+    const groundFriction = 6.0 / ticRate;
+    const waterFriction = 1.0 / ticRate;
+    const flightFriction = 5.0 / ticRate;
+
     enum EWaterLevel
     {
         WL_NotInWater   = 0,
@@ -483,8 +494,37 @@ class QuakePlayer : DoomPlayer
 
     virtual void Friction()
     {
-        vel *= GetFriction();
-        player.vel *= GetFriction();
+        /*vel *= GetFriction();
+        player.vel *= GetFriction();*/
+
+        double spd = vel.Length();
+        if (spd < 1)
+        {
+            vel.xy = (0, 0);
+            return; // Prevents div by 0
+        }
+
+        double drop = 0;
+
+        if (waterLevel <= WL_Feet && player.onGround)   // TODO: low, high friction surfaces
+        {
+            double control = spd < stopSpeed ? stopSpeed : spd;
+            drop += control * groundFriction;
+        }
+
+        if (waterLevel)
+        {
+            drop += spd * waterFriction * waterLevel;
+        }
+
+        if (bNoGravity)
+        {
+            drop += spd * flightFriction;
+        }
+
+        double newSpeed = Max(spd - drop, 0) / spd;
+        vel *= newSpeed;
+        player.vel *= newSpeed;
     }
 
 
