@@ -32,7 +32,7 @@ class QuakePlayer : DoomPlayer
 
     const stopSpeed = 100.0 / ticRate;
 
-    const groundAccelerate = 10.0 / ticRate;
+    const groundAccelerate = 10.0 / ticRate;    // TODO: aircontrol, etc.
     const airAccelerate = 1.0 / ticRate;
     const waterAccelerate = 4.0 / ticRate;
     const flyAccelerate = 8.0 / ticRate;
@@ -494,13 +494,11 @@ class QuakePlayer : DoomPlayer
 
     virtual void Friction()
     {
-        /*vel *= GetFriction();
-        player.vel *= GetFriction();*/
-
         double spd = vel.Length();
         if (spd < 1)
         {
             vel.xy = (0, 0);
+            player.vel = (0, 0);
             return; // Prevents div by 0
         }
 
