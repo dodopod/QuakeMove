@@ -293,14 +293,17 @@ class QuakePlayer : DoomPlayer
             fm /= maxForwardMove;
             sm /= maxSideMove;
 
+            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
+            double scale = canStraferun ? speed : CmdScale();
+            fm *= scale;
+            sm *= scale;
+
             Vector3 forward = (AngleToVector(angle), 0);
             Vector3 right = (AngleToVector(angle - 90), 0);
             Vector3 wishVel = fm * forward + sm * right;
 
             Vector3 wishDir = wishVel.Unit();
-            double wishSpeed = wishVel.Length() * speed;
-            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
-            if (!canStraferun) wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);
+            double wishSpeed = wishVel.Length();
 
             double accel = GetMoveFactor() * groundAccelerate;
             Accelerate(wishDir, wishSpeed, accel);
@@ -343,15 +346,19 @@ class QuakePlayer : DoomPlayer
             sm /= maxSideMove;
             um /= maxUpMove;
 
+            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
+            double scale = canStraferun ? speed : CmdScale();
+            fm *= scale;
+            sm *= scale;
+            um *= scale;
+
             Vector3 forward = (Cos(pitch) * Cos(angle), Cos(pitch) * Sin(angle), -Sin(pitch));
             Vector3 right = (AngleToVector(angle - 90), 0);
             Vector3 wishVel = fm * forward + sm * right;
             wishVel.z += um;
 
             Vector3 wishDir = wishVel.Unit();
-            double wishSpeed = wishVel.Length() * speed;
-            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
-            if (!canStraferun) wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);
+            double wishSpeed = wishVel.Length();
 
             double accel = GetMoveFactor() * flyAccelerate;
             Accelerate(wishDir, wishSpeed, accel);
@@ -386,6 +393,12 @@ class QuakePlayer : DoomPlayer
             sm /= maxSideMove;
             um /= maxUpMove;
 
+            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
+            double scale = canStraferun ? speed : CmdScale();
+            fm *= scale;
+            sm *= scale;
+            um *= scale;
+
             Vector3 forward = (Cos(pitch) * Cos(angle), Cos(pitch) * Sin(angle), -Sin(pitch));
             Vector3 right = (AngleToVector(angle - 90), 0);
             Vector3 wishVel = fm * forward + sm * right;
@@ -395,9 +408,7 @@ class QuakePlayer : DoomPlayer
             if (wishVel.Length() == 0) return;
 
             Vector3 wishDir = wishVel.Unit();
-            double wishSpeed = wishVel.Length() * speed;
-            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
-            if (!canStraferun) wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);
+            double wishSpeed = wishVel.Length();
 
             double accel = GetMoveFactor() * waterAccelerate;
             Accelerate(wishDir, wishSpeed, accel);
@@ -459,14 +470,17 @@ class QuakePlayer : DoomPlayer
             fm /= maxForwardMove;
             sm /= maxSideMove;
 
+            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
+            double scale = canStraferun ? speed : CmdScale();
+            fm *= scale;
+            sm *= scale;
+
             Vector3 forward = (AngleToVector(angle), 0);
             Vector3 right = (AngleToVector(angle - 90), 0);
             Vector3 wishVel = fm * forward + sm * right;
 
             Vector3 wishDir = wishVel.Unit();
-            double wishSpeed = wishVel.Length() * speed;
-            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
-            if (!canStraferun) wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);
+            double wishSpeed = wishVel.Length();
 
             double accel = GetMoveFactor() * airAccelerate;
             Accelerate(wishDir, wishSpeed, accel);
@@ -492,6 +506,20 @@ class QuakePlayer : DoomPlayer
         up *= upMove;
 
         return forward, side, up;
+    }
+
+
+    virtual double CmdScale()
+    {
+		UserCmd cmd = player.cmd;
+        double fm = double(cmd.forwardMove) / maxForwardMove;
+        double sm = double(cmd.sideMove) / maxSideMove;
+        double um = double(cmd.upMove) / maxUpMove;
+
+        double maxCmd = Max(Abs(fm), Abs(sm), Abs(um));
+        double total = (fm, sm, um).Length();
+
+        return total ? speed * maxCmd / total : 0;
     }
 
 
