@@ -27,8 +27,8 @@ class QuakePlayer : DoomPlayer
     const maxUpMove = 768;
     const stopFlying = -32768;
 
-    const normalFriction = 0.8125;
-    const acceleration = 10.0 / ticRate / normalFriction;
+    const normalFriction = 0.90625;
+    const oneUps = 1.0 / ticRate;
 
     const stopSpeed = 100.0 / ticRate;
 
@@ -302,8 +302,9 @@ class QuakePlayer : DoomPlayer
             bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
             if (!canStraferun) wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);
 
-            Accelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
-            BobAccelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
+            double accel = GetMoveFactor() * groundAccelerate;
+            Accelerate(wishDir, wishSpeed, accel);
+            BobAccelerate(wishDir, wishSpeed, accel);
 
             // Running animation
 			if (!(player.cheats & CF_PREDICTING) && (fm != 0 || sm != 0)) PlayRunning();
@@ -352,8 +353,9 @@ class QuakePlayer : DoomPlayer
             bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
             if (!canStraferun) wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);
 
-            Accelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
-            BobAccelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
+            double accel = GetMoveFactor() * flyAccelerate;
+            Accelerate(wishDir, wishSpeed, accel);
+            BobAccelerate(wishDir, wishSpeed, accel);
 
             // Running animation
 			if (!(player.cheats & CF_PREDICTING) && (fm != 0 || sm != 0)) PlayRunning();
@@ -397,8 +399,9 @@ class QuakePlayer : DoomPlayer
             bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
             if (!canStraferun) wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);
 
-            Accelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
-            BobAccelerate(wishDir, wishSpeed, GetMoveFactor() * acceleration);
+            double accel = GetMoveFactor() * waterAccelerate;
+            Accelerate(wishDir, wishSpeed, accel);
+            BobAccelerate(wishDir, wishSpeed, accel);
 
             // Running animation
 			if (!(player.cheats & CF_PREDICTING) && (fm != 0 || sm != 0)) PlayRunning();
@@ -465,7 +468,7 @@ class QuakePlayer : DoomPlayer
             bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
             if (!canStraferun) wishSpeed = Clamp(wishVel.Length() * speed, 0, speed);
 
-            double accel = GetMoveFactor() * acceleration * level.airControl;
+            double accel = GetMoveFactor() * airAccelerate;
             Accelerate(wishDir, wishSpeed, accel);
             BobAccelerate(wishDir, wishSpeed, accel);
 
@@ -495,7 +498,7 @@ class QuakePlayer : DoomPlayer
     virtual void Friction()
     {
         double spd = vel.Length();
-        if (spd < 1)
+        if (spd < oneUps)
         {
             vel.xy = (0, 0);
             player.vel = (0, 0);
@@ -504,10 +507,11 @@ class QuakePlayer : DoomPlayer
 
         double drop = 0;
 
-        if (waterLevel <= WL_Feet && player.onGround)   // TODO: low, high friction surfaces
+        if (waterLevel <= WL_Feet && player.onGround)
         {
             double control = spd < stopSpeed ? stopSpeed : spd;
             drop += control * groundFriction;
+            drop *= GetMoveFactor();
         }
 
         if (waterLevel)
