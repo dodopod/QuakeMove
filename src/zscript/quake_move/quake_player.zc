@@ -33,7 +33,6 @@ class QuakePlayer : DoomPlayer
     const stopSpeed = 100.0 / ticRate;
     const duckScale = 0.25;
     const swimScale = 0.5;
-    //const wadeScale = 0.7;
 
     const groundAccelerate = 10.0 / ticRate;    // TODO: aircontrol, etc.
     const airAccelerate = 1.0 / ticRate;
@@ -164,13 +163,11 @@ class QuakePlayer : DoomPlayer
         case MT_Water:
             if (IsPressed(BT_Jump))
             {
-                //cmd.buttons &= ~BT_Jump;
                 cmd.upMove = maxUpMove;
             }
 
             if (IsPressed(BT_Crouch))
             {
-                //cmd.buttons &= ~BT_Crouch;
                 cmd.upMove = -maxUpMove;
             }
 
@@ -216,19 +213,6 @@ class QuakePlayer : DoomPlayer
 			Angle += cmd.yaw * (360./65536.);
 		}
     }
-
-
-    /*override void CheckCrouch(bool totallyFrozen)
-    {
-        UserCmd cmd = player.cmd;
-        Super.CheckCrouch(totallyFrozen);
-
-        if (CanCrouch())
-        {   // Crouch reduces speed
-            cmd.forwardMove *= player.crouchFactor;
-            cmd.sideMove *= player.crouchFactor;
-        }
-    }*/
 
 
     override void CheckJump()
