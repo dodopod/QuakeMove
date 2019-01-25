@@ -449,6 +449,7 @@ class QuakePlayer : DoomPlayer
 			}
         }
 
+        CheckJump();    // In case CheckJump is overridden to allow double jump, mantling, etc.
         Friction();
 
         if (cmd.forwardMove || cmd.sideMove)
