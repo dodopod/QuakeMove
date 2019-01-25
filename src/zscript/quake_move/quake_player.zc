@@ -12,6 +12,7 @@ class QuakePlayer : DoomPlayer
     Default
     {
 		Speed 320.0 / ticRate;  // No idea how close Doom & Quake units are, but it feels right
+        Player.JumpZ 270.0 / ticRate;
 
         QuakePlayer.UpMove 0.5;
 
