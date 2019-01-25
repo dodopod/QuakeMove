@@ -31,6 +31,8 @@ class QuakePlayer : DoomPlayer
     const ups = 1.0 / ticRate;
 
     const stopSpeed = 100.0 / ticRate;
+    const duckScale = 0.25;
+    const swimScale = 0.5;
 
     const groundAccelerate = 10.0 / ticRate;    // TODO: aircontrol, etc.
     const airAccelerate = 1.0 / ticRate;
@@ -161,13 +163,11 @@ class QuakePlayer : DoomPlayer
         case MT_Water:
             if (IsPressed(BT_Jump))
             {
-                //cmd.buttons &= ~BT_Jump;
                 cmd.upMove = maxUpMove;
             }
 
             if (IsPressed(BT_Crouch))
             {
-                //cmd.buttons &= ~BT_Crouch;
                 cmd.upMove = -maxUpMove;
             }
 
@@ -212,19 +212,6 @@ class QuakePlayer : DoomPlayer
 		{
 			Angle += cmd.yaw * (360./65536.);
 		}
-    }
-
-
-    override void CheckCrouch(bool totallyFrozen)
-    {
-        UserCmd cmd = player.cmd;
-        Super.CheckCrouch(totallyFrozen);
-
-        if (CanCrouch())
-        {   // Crouch reduces speed
-            cmd.forwardMove *= player.crouchFactor;
-            cmd.sideMove *= player.crouchFactor;
-        }
     }
 
 
@@ -304,6 +291,20 @@ class QuakePlayer : DoomPlayer
 
             Vector3 wishDir = wishVel.Unit();
             double wishSpeed = wishVel.Length();
+
+            // Crouch walk is slower
+            if (CanCrouch() && level.IsCrouchingAllowed() && IsPressed(BT_Crouch))
+            {
+                wishSpeed = Min(wishSpeed, speed * duckScale);
+            }
+
+            // So is wading
+            if (waterlevel)
+            {
+                double waterScale = double(waterLevel) / 3;
+                waterScale = 1 - (1 - swimScale) * waterScale;
+                wishSpeed = Min(wishSpeed, speed * waterScale);
+            }
 
             double accel = GetMoveFactor() * groundAccelerate;
             Accelerate(wishDir, wishSpeed, accel);
@@ -409,6 +410,8 @@ class QuakePlayer : DoomPlayer
 
             Vector3 wishDir = wishVel.Unit();
             double wishSpeed = wishVel.Length();
+
+            wishSpeed = Min(wishSpeed, speed * swimScale);
 
             double accel = GetMoveFactor() * waterAccelerate;
             Accelerate(wishDir, wishSpeed, accel);
