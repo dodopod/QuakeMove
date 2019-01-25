@@ -28,7 +28,7 @@ class QuakePlayer : DoomPlayer
     const stopFlying = -32768;
 
     const normalFriction = 0.90625;
-    const oneUps = 1.0 / ticRate;
+    const ups = 1.0 / ticRate;
 
     const stopSpeed = 100.0 / ticRate;
 
@@ -526,7 +526,7 @@ class QuakePlayer : DoomPlayer
     virtual void Friction()
     {
         double spd = vel.Length();
-        if (spd < oneUps)
+        if (spd < ups)
         {
             vel.xy = (0, 0);
             player.vel = (0, 0);
