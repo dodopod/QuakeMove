@@ -161,7 +161,7 @@ class QuakePlayer : DoomPlayer
     // Adapted from cg_view.c: CalcViewValues & OffsetFirstPersonView
     override void CalcHeight()
     {
-        bobFracSin = Abs(Sin(bobCycle / 256 * 360));
+        bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
         //Console.Printf("bobFracSin = %.4f", bobFracSin);
 
         // Dead
@@ -218,6 +218,7 @@ class QuakePlayer : DoomPlayer
         else                bobMove = 300.0 / ticRate;
 
         bobCycle = (bobCycle + bobMove) % 256;
+        //Console.Printf("bobCycle = %.4f", bobCycle);
 
         // TODO: finish function, CalcHeight, WeaponBob
     }
