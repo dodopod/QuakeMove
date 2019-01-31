@@ -63,6 +63,12 @@ class QuakePlayer : DoomPlayer
 
     double upMove;
 
+    double bobCycle;
+    double bobFracSin;
+
+    bool isCrouching;
+    bool isRunning;
+
 
     override void PlayerThink()
     {
@@ -147,7 +153,73 @@ class QuakePlayer : DoomPlayer
             }
 		}
 
-        CalcHeight();   // Vertical bob
+        Footsteps();
+        CalcHeight();   // View bob
+    }
+
+
+    // Adapted from cg_view.c: CalcViewValues & OffsetFirstPersonView
+    override void CalcHeight()
+    {
+        bobFracSin = Abs(Sin(bobCycle / 256 * 360));
+        //Console.Printf("bobFracSin = %.4f", bobFracSin);
+
+        // Dead
+
+        // Weapon kick
+        // Damage kick
+        // Fall kick (disabled)
+
+        // Velocity angles
+        // Bob angles
+
+        // View height
+        player.viewZ = pos.z + player.viewHeight;
+
+        // Duck height
+        // Bob height
+        double bob = Min(bobFracSin * player.vel.Length() * ticRate * 0.005, 6);  // TODO: cg_bobup cvar
+        //Console.Printf("bob = %.4f", bob);
+        player.viewZ += bob;
+
+        // Fall height
+
+        // Step offset
+        // Kick offset
+
+        // Neck pivot (disabled)
+    }
+
+
+    override Vector2 BobWeapon(double ticFrac)
+    {
+        return (0, 0);
+    }
+
+
+    virtual void Footsteps()
+    {
+        UserCmd cmd = player.cmd;
+
+        player.vel = vel.xy;
+
+        // airborne leaves position in cycle intact, but doesn't advance
+        if (!player.onGround) return;
+
+        if (!cmd.forwardMove && !cmd.sideMove)
+        {
+            if (vel.xy.Length() < 5 * ups) bobCycle = 0;
+            return;
+        }
+
+        double bobMove;
+        if (isCrouching)    bobMove = 500.0 / ticRate;
+        else if (isRunning) bobMove = 400.0 / ticRate;
+        else                bobMove = 300.0 / ticRate;
+
+        bobCycle = (bobCycle + bobMove) % 256;
+
+        // TODO: finish function, CalcHeight, WeaponBob
     }
 
 
@@ -213,6 +285,14 @@ class QuakePlayer : DoomPlayer
 		{
 			Angle += cmd.yaw * (360./65536.);
 		}
+    }
+
+
+    override void CheckCrouch(bool totallyFrozen)
+    {
+        isCrouching = CanCrouch() && level.IsCrouchingAllowed() && IsPressed(BT_Crouch);
+
+        Super.CheckCrouch(totallyFrozen);
     }
 
 
@@ -318,7 +398,7 @@ class QuakePlayer : DoomPlayer
             double wishSpeed = wishVel.Length();
 
             // Crouch walk is slower
-            if (CanCrouch() && level.IsCrouchingAllowed() && IsPressed(BT_Crouch))
+            if (isCrouching)
             {
                 wishSpeed = Min(wishSpeed, speed * duckScale);
             }
@@ -548,7 +628,11 @@ class QuakePlayer : DoomPlayer
         double maxCmd = Max(Abs(fm), Abs(sm), Abs(um));
         double total = (fm, sm, um).Length();
 
-        return total ? speed * maxCmd / total : 0;
+        double scale = total ? speed * maxCmd / total : 0;
+
+        isRunning = scale > speed / 2;
+
+        return scale;
     }
 
 
