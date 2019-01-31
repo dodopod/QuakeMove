@@ -65,6 +65,8 @@ class QuakePlayer : DoomPlayer
 
     double bobCycle;
     double bobFracSin;
+    double lastPitch;
+    double lastRoll;
 
     bool isCrouching;
     bool isRunning;
@@ -172,6 +174,18 @@ class QuakePlayer : DoomPlayer
 
         // Velocity angles
         // Bob angles
+        double spd = Max(player.vel.Length() * ticRate, 200);   // Make sure bob is obvious at low speeds
+
+        double delta = bobFracSin * 0.002 * spd;    // TODO: cg_bobpitch cvar
+        if (isCrouching) delta *= 3;
+        pitch += delta - lastPitch;
+        lastPitch = delta;
+
+        delta = bobFracSin * 0.002 * spd;    // TODO: cg_bobroll cvar
+        if (isCrouching) delta *= 3;
+        if (bobCycle >= 128) delta *= -1;
+        roll += delta - lastRoll;
+        lastRoll = delta;
 
         // View height
         player.viewZ = pos.z + player.viewHeight;
