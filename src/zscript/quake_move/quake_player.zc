@@ -172,20 +172,35 @@ class QuakePlayer : DoomPlayer
         // Damage kick
         // Fall kick (disabled)
 
+        // Cancel pitch & roll added last frame
+        pitch -= lastPitch;
+        roll -= lastRoll;
+
         // Velocity angles
+        Vector3 forward = (Cos(pitch) * Cos(angle), Cos(pitch) * Sin(angle), -Sin(pitch));
+        Vector3 right = (AngleToVector(angle - 90), 0);
+
+        double delta = (vel dot forward) * ticRate * 0.002;   // TODO: cg_runpitch cvar
+        pitch += delta;
+        lastPitch = delta;
+
+        delta = (vel dot right) * ticRate * 0.005;   // TODO: cg_runroll cvar
+        roll += delta;
+        lastRoll = delta;
+
         // Bob angles
         double spd = Max(player.vel.Length() * ticRate, 200);   // Make sure bob is obvious at low speeds
 
-        double delta = bobFracSin * 0.002 * spd;    // TODO: cg_bobpitch cvar
+        delta = bobFracSin * 0.002 * spd;    // TODO: cg_bobpitch cvar
         if (isCrouching) delta *= 3;
-        pitch += delta - lastPitch;
-        lastPitch = delta;
+        pitch += delta;
+        lastPitch += delta;
 
         delta = bobFracSin * 0.002 * spd;    // TODO: cg_bobroll cvar
         if (isCrouching) delta *= 3;
         if (bobCycle >= 128) delta *= -1;
-        roll += delta - lastRoll;
-        lastRoll = delta;
+        roll += delta;
+        lastRoll += delta;
 
         // View height
         player.viewZ = pos.z + player.viewHeight;
