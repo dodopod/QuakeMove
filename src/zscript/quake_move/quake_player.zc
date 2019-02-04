@@ -165,14 +165,10 @@ class QuakePlayer : DoomPlayer
     // Adapted from cg_view.c: CalcViewValues & OffsetFirstPersonView
     override void CalcHeight()
     {
-        bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
-        //Console.Printf("bobFracSin = %.4f", bobFracSin);
-
         // Dead
 
         // Weapon kick
         // Damage kick
-        // Fall kick (disabled)
 
         // Cancel pitch & roll added last frame
         pitch -= lastPitch;
@@ -210,15 +206,12 @@ class QuakePlayer : DoomPlayer
         // Duck height
         // Bob height
         double bob = Min(bobFracSin * player.vel.Length() * ticRate * 0.005, 6);  // TODO: cg_bobup cvar
-        //Console.Printf("bob = %.4f", bob);
         player.viewZ += bob;
 
         // Fall height
 
         // Step offset
         // Kick offset
-
-        // Neck pivot (disabled)
     }
 
 
@@ -268,9 +261,7 @@ class QuakePlayer : DoomPlayer
         else                bobMove = 300.0 / ticRate;
 
         bobCycle = (bobCycle + bobMove) % 256;
-        //Console.Printf("bobCycle = %.4f", bobCycle);
-
-        // TODO: finish function, CalcHeight, WeaponBob
+        bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
     }
 
 
