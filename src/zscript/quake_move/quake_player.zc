@@ -23,6 +23,9 @@ class QuakePlayer : DoomPlayer
     const straferunningCVar = "G_Straferunning";
     const strafejumpingCVar = "G_Strafejumping";
 
+    const landDeflectTics = 0.1 * ticRate;
+    const landReturnTics = 0.4 * ticRate;
+
     const maxForwardMove = 12800;
     const maxSideMove = 10240;
     const maxUpMove = 768;
@@ -67,6 +70,8 @@ class QuakePlayer : DoomPlayer
     double bobFracSin;
     double lastPitch;
     double lastRoll;
+    int landTics;
+    int landChange;
 
     bool isCrouching;
     bool isRunning;
@@ -91,6 +96,9 @@ class QuakePlayer : DoomPlayer
 		}
 
 		player.onGround = (pos.z <= floorZ) || bOnMobj || bMBFBouncer || (player.cheats & CF_NoClip2);
+        if (!player.onGround) landTics = 0;
+        else ++landTics;
+
         HandleMovement();
 
         if (!predicting)
@@ -209,6 +217,23 @@ class QuakePlayer : DoomPlayer
         player.viewZ += bob;
 
         // Fall height
+        if (landTics == 0)
+        {
+            if (vel.z > -gruntSpeed) landChange = -8;
+            else if (vel.z > -fallingScreamMinSpeed) landChange = -16;
+            else landChange = -24;
+        }
+
+        if (landTics < landDeflectTics)
+        {
+            double f = landTics / landDeflectTics;
+            player.viewZ += landChange * f;
+        }
+        else if (landTics < landDeflectTics + landReturnTics)
+        {
+            double f = 1 - (landTics - landDeflectTics) / landReturnTics;
+            player.viewZ += landChange * f;
+        }
 
         // Step offset
         // Kick offset
@@ -240,6 +265,7 @@ class QuakePlayer : DoomPlayer
     }
 
 
+    // Adapted from bg_pmove.c: PM_Footsteps
     virtual void Footsteps()
     {
         UserCmd cmd = player.cmd;
