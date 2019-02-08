@@ -11,8 +11,8 @@ class QuakePlayer : DoomPlayer
 
     Default
     {
-		Speed 320.0 / ticRate;  // No idea how close Doom & Quake units are, but it feels right
-        Player.JumpZ 270.0 / ticRate;
+		Speed 320.0 * ups;  // No idea how close Doom & Quake units are, but it feels right
+        Player.JumpZ 270.0 * ups;
 
         QuakePlayer.UpMove 0.5;
 
@@ -34,7 +34,7 @@ class QuakePlayer : DoomPlayer
     const normalFriction = 0.90625;
     const ups = 1.0 / ticRate;
 
-    const stopSpeed = 100.0 / ticRate;
+    const stopSpeed = 100.0 * ups;
     const duckScale = 0.25;
     const swimScale = 0.5;
 
