@@ -257,6 +257,17 @@ class QuakePlayer : DoomPlayer
         offset += (xSign * spd * bobFracSin * 0.02, spd * bobFracSin * 0.01);
 
         // Falling
+        if (landTics < landDeflectTics)
+        {
+            double f = landTics / landDeflectTics;
+            offset.y -= landChange * f;
+        }
+        else if (landTics < landDeflectTics + landReturnTics)
+        {
+            double f = 1 - (landTics - landDeflectTics) / landReturnTics;
+            offset.y -= landChange * f;
+        }
+
         // Idle drift
         spd += 40;
         double fracSin = Sin(double(level.time) / ticRate * (360 / 6.28)) + 1;  // +1 so weapon never goes up
