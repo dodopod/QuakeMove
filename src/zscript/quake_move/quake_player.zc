@@ -1,4 +1,4 @@
-// Code adapted from PlayerPawn & DoomPlayer in gzdoom.pk3
+// Code adapted from PlayerPawn in gzdoom.pk3 and various functions from Quake 3
 
 class QuakePlayer : DoomPlayer
 {
@@ -23,6 +23,7 @@ class QuakePlayer : DoomPlayer
     const straferunningCVar = "G_Straferunning";
     const strafejumpingCVar = "G_Strafejumping";
 
+    const landSpeed = 8;
     const landDeflectTics = 0.1 * ticRate;
     const landReturnTics = 0.4 * ticRate;
 
@@ -219,8 +220,9 @@ class QuakePlayer : DoomPlayer
         // Fall height
         if (landTics == 0)
         {
-            if (vel.z > -gruntSpeed) landChange = -8;
-            else if (vel.z > -fallingScreamMinSpeed) landChange = -16;
+            if (-vel.z < landSpeed) landChange = 0;
+            else if (-vel.z < gruntSpeed) landChange = -8;
+            else if (-vel.z < fallingScreamMinSpeed) landChange = -16;
             else landChange = -24;
         }
 
