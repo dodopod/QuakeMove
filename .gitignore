@@ -1,2 +1,4 @@
-build/*
-src/maps/*
+build
+src/maps
+src/sndinfo.lmp
+src/sounds
