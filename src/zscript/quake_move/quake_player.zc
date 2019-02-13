@@ -171,51 +171,9 @@ class QuakePlayer : DoomPlayer
 
     // View and weapon bob
 
-    // Adapted from cg_view.c: CG_OffsetFirstPersonView, CG_StepOffset
+    // Adapted from cg_view.c: CG_OffsetFirstPersonView and player.txt: CalcHeight
     override void CalcHeight()
     {
-        let player = self.player;
-		double angle;
-		//double bob;
-		bool still = false;
-
-		// Regular movement bobbing
-		// (needs to be calculated for gun swing even if not on ground)
-
-		// killough 10/98: Make bobbing depend only on player-applied motion.
-		//
-		// Note: don't reduce bobbing here if on ice: if you reduce bobbing here,
-		// it causes bobbing jerkiness when the player moves from ice to non-ice,
-		// and vice-versa.
-
-		if (player.cheats & CF_NOCLIP2)
-		{
-			player.bob = 0;
-		}
-		else if (bNoGravity && !player.onground)
-		{
-			player.bob = 0.5;
-		}
-		else
-		{
-			player.bob = player.Vel dot player.Vel;
-			if (player.bob == 0)
-			{
-				still = true;
-			}
-			else
-			{
-				player.bob *= player.GetMoveBob();
-
-				if (player.bob > MAXBOB)
-					player.bob = MAXBOB;
-			}
-		}
-
-        // Dead
-        // Weapon kick
-        // Damage kick
-
         // Cancel pitch & roll added last frame
         pitch -= lastPitch;
         roll -= lastRoll;
@@ -246,15 +204,8 @@ class QuakePlayer : DoomPlayer
         roll += delta;
         lastRoll += delta;
 
-        // View height
-        //player.viewZ = pos.z + viewHeight;
-
-        // Duck height
-        //player.viewZ += player.crouchViewDelta;
-
         // Bob height
         double bob = Min(bobFracSin * player.vel.Length() * ticRate * 0.005, 6);  // TODO: cg_bobup cvar
-        //player.viewZ += bob;
 
         // Fall height
         if (landTics == 0)
@@ -275,9 +226,6 @@ class QuakePlayer : DoomPlayer
             double f = 1 - (landTics - landDeflectTics) / landReturnTics;
             player.viewZ += landChange * f;
         }
-
-        // Step offset
-        // Kick offset
 
 		double defaultviewheight = ViewHeight + player.crouchviewdelta;
 
