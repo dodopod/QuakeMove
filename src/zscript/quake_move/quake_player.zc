@@ -510,7 +510,7 @@ class QuakePlayer : DoomPlayer
             sm /= maxSideMove;
 
             bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
-            double scale = canStraferun ? speed : CmdScale();
+            double scale = CmdScale();
             fm *= scale;
             sm *= scale;
 
@@ -577,7 +577,7 @@ class QuakePlayer : DoomPlayer
             um /= maxUpMove;
 
             bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
-            double scale = canStraferun ? speed : CmdScale();
+            double scale = CmdScale();
             fm *= scale;
             sm *= scale;
             um *= scale;
@@ -624,7 +624,7 @@ class QuakePlayer : DoomPlayer
             um /= maxUpMove;
 
             bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
-            double scale = canStraferun ? speed : CmdScale();
+            double scale = CmdScale();
             fm *= scale;
             sm *= scale;
             um *= scale;
@@ -703,8 +703,7 @@ class QuakePlayer : DoomPlayer
             fm /= maxForwardMove;
             sm /= maxSideMove;
 
-            bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
-            double scale = canStraferun ? speed : CmdScale();
+            double scale = CmdScale();
             fm *= scale;
             sm *= scale;
 
@@ -744,6 +743,9 @@ class QuakePlayer : DoomPlayer
 
     virtual double CmdScale()
     {
+        bool canStraferun = CVar.FindCVar(straferunningCVar).GetBool();
+        if (canStraferun) return speed;
+
 		UserCmd cmd = player.cmd;
         double fm = double(cmd.forwardMove) / maxForwardMove;
         double sm = double(cmd.sideMove) / maxSideMove;
