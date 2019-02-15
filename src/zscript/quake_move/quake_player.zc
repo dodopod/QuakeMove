@@ -22,6 +22,11 @@ class QuakePlayer : DoomPlayer
     }
 
 
+    const runPitchCVar = "CG_RunPitch";
+    const runRollCVar = "CG_RunRoll";
+    const bobPitchCVar = "CG_BobPitch";
+    const bobRollCVar = "CG_BobRoll";
+    const bobUpCVar = "CG_BobUp";
     const straferunningCVar = "G_Straferunning";
     const strafejumpingCVar = "G_Strafejumping";
 
@@ -184,30 +189,35 @@ class QuakePlayer : DoomPlayer
         Vector3 forward = (Cos(pitch) * Cos(angle), Cos(pitch) * Sin(angle), -Sin(pitch));
         Vector3 right = (AngleToVector(angle - 90), 0);
 
-        double delta = (vel dot forward) * ticRate * 0.002;   // TODO: cg_runpitch cvar
+        double runPitch = CVar.GetCVar(runPitchCVar, player).GetFloat();
+        double delta = (vel dot forward) * ticRate * runPitch;
         pitch += delta;
         lastPitch = delta;
 
-        delta = (vel dot right) * ticRate * 0.005;   // TODO: cg_runroll cvar
+        double runRoll = CVar.GetCVar(runRollCVar, player).GetFloat();
+        delta = (vel dot right) * ticRate * runRoll;
         roll += delta;
         lastRoll = delta;
 
         // Bob angles
         double spd = Max(player.vel.Length() * ticRate, 200);   // Make sure bob is obvious at low speeds
 
-        delta = bobFracSin * 0.002 * spd;   // TODO: cg_bobpitch cvar
+        double bobPitch = CVar.GetCVar(bobPitchCVar, player).GetFloat();
+        delta = bobFracSin * bobPitch * spd;
         if (isCrouching) delta *= 3;
         pitch += delta;
         lastPitch += delta;
 
-        delta = bobFracSin * 0.002 * spd;   // TODO: cg_bobroll cvar
+        double bobRoll = CVar.GetCVar(bobRollCVar, player).GetFloat();
+        delta = bobFracSin * bobRoll * spd;
         if (isCrouching) delta *= 3;
         if (bobCycle >= 128) delta *= -1;   // Swap direction for left foot
         roll += delta;
         lastRoll += delta;
 
         // Bob height
-        double bob = Min(bobFracSin * player.vel.Length() * ticRate * 0.005, 6);  // TODO: cg_bobup cvar
+        double bobUp = CVar.GetCVar(bobUpCVar, player).GetFloat();
+        double bob = Min(bobFracSin * player.vel.Length() * ticRate * bobUp, 6);
 
         // Fall height
         if (landTics == 0)

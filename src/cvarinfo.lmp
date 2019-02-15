@@ -1,3 +1,9 @@
+user float CG_RunPitch = 0.002;
+user float CG_RunRoll = 0.005;
+user float CG_BobPitch = 0.002;
+user float CG_BobRoll = 0.002;
+user float CG_BobUp = 0.005;
+
 user bool CG_Speedometer = false;
 
 server bool G_StrafeJumping = true;
