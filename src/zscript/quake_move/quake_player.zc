@@ -58,6 +58,8 @@ class QuakePlayer : DoomPlayer
     const waterFriction = 1.0 / ticRate;
     const flightFriction = 5.0 / ticRate;
 
+    meta bool scaleToDoomDefaults;
+
     enum EWaterLevel
     {
         WL_NotInWater   = 0,
@@ -304,16 +306,18 @@ class QuakePlayer : DoomPlayer
     // Adapted from cg_weapons.c: CG_CalculateWeaponPosition
     override Vector2 BobWeapon(double ticFrac)
     {
+        let weapon = player.readyWeapon;
+
         Vector2 offset = (0, 0);
 
         // From bobbing
-        // TODO: Take weapon properties into account
         double spd = player.vel.Length() * ticRate;
         int xSign = bobCycle >= 128 ? -1 : 1;   // Swap direction for left foot
+        Vector2 range = (weapon.bobRangeX * viewBob, weapon.bobRangeY * viewBob);
 
         // Have to simulate yaw/pitch w/ x/y offset
         // I don't think PSPrites have roll
-        offset += (xSign * spd * bobFracSin * 0.02, spd * bobFracSin * 0.01);
+        offset += (xSign * spd * bobFracSin * 0.02 * range.x, spd * bobFracSin * 0.01 * range.y);
 
         // Falling
         if (landTics < landDeflectTics)
@@ -332,7 +336,6 @@ class QuakePlayer : DoomPlayer
         double fracSin = Sin(double(level.time) / ticRate * (360 / 6.28)) + 1;  // +1 so weapon never goes up
         offset += (-spd * fracSin * 0.02, spd * fracSin * 0.02);
 
-        // TODO: Take ticFrac into account
         return offset;
     }
 
