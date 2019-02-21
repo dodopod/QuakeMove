@@ -10,6 +10,8 @@ class QuakePlayer : DoomPlayer
     Property ViewBob : viewBob; // Alias for Player.ViewBob
     Property ViewTilt : viewTilt;
 
+    Property AssumeCVarDefaults : AssumeCVarDefaults;
+
 
     Default
     {
@@ -20,6 +22,7 @@ class QuakePlayer : DoomPlayer
 
         QuakePlayer.UpMove 0.5;
         QuakePlayer.ViewTilt 1.0;
+        QuakePlayer.AssumeCVarDefaults true;
 
         +NoFriction
     }
@@ -58,7 +61,7 @@ class QuakePlayer : DoomPlayer
     const waterFriction = 1.0 / ticRate;
     const flightFriction = 5.0 / ticRate;
 
-    meta bool scaleToDoomDefaults;
+    meta bool assumeCVarDefaults;
 
     enum EWaterLevel
     {
@@ -333,7 +336,7 @@ class QuakePlayer : DoomPlayer
 
         // Idle drift
         double spd = player.vel.Length() * ticRate + 40;
-        spd *= player.GetStillBob();
+        spd *= player.GetStillBob() + (assumeCVarDefaults ? 1 : 0);
         double fracSin = Sin(double(level.time) / ticRate * (360 / 6.28)) + 1;  // +1 so weapon never goes up
         offset += (-spd * fracSin * 0.02, spd * fracSin * 0.02);
 
@@ -366,7 +369,7 @@ class QuakePlayer : DoomPlayer
         bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
 
         // player.bob is 35x bigger than in Doom; not sure if that matters for anything
-        player.bob = player.vel.Length() * ticRate * player.GetMoveBob();
+        player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (assumeCVarDefaults ? 0.75 : 0));
     }
 
 
