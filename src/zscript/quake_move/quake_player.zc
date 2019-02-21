@@ -10,6 +10,8 @@ class QuakePlayer : DoomPlayer
     Property ViewBob : viewBob; // Alias for Player.ViewBob
     Property ViewTilt : viewTilt;
 
+    Property AssumeCVarDefaults : AssumeCVarDefaults;
+
 
     Default
     {
@@ -20,6 +22,7 @@ class QuakePlayer : DoomPlayer
 
         QuakePlayer.UpMove 0.5;
         QuakePlayer.ViewTilt 1.0;
+        QuakePlayer.AssumeCVarDefaults true;
 
         +NoFriction
     }
@@ -58,7 +61,7 @@ class QuakePlayer : DoomPlayer
     const waterFriction = 1.0 / ticRate;
     const flightFriction = 5.0 / ticRate;
 
-    meta bool scaleToDoomDefaults;
+    meta bool assumeCVarDefaults;
 
     enum EWaterLevel
     {
@@ -192,6 +195,7 @@ class QuakePlayer : DoomPlayer
         roll -= lastRoll;
 
         // Velocity angles
+        // Yes, they depend on actual vel, not player-intended vel
         Vector3 forward = (Cos(pitch) * Cos(angle), Cos(pitch) * Sin(angle), -Sin(pitch));
         Vector3 right = (AngleToVector(angle - 90), 0);
 
@@ -206,16 +210,16 @@ class QuakePlayer : DoomPlayer
         lastRoll = delta;
 
         // Bob angles
-        double spd = Max(player.vel.Length() * ticRate, 200);   // Make sure bob is obvious at low speeds
+        double spd = Max(player.bob, 200);   // Make sure bob is obvious at low speeds
 
         double bobPitch = CVar.GetCVar(bobPitchCVar, player).GetFloat();
-        delta = bobFracSin * bobPitch * viewBob * spd;
+        delta = bobFracSin * bobPitch * spd * viewBob;
         if (isCrouching) delta *= 3;
         pitch += delta;
         lastPitch += delta;
 
         double bobRoll = CVar.GetCVar(bobRollCVar, player).GetFloat();
-        delta = bobFracSin * bobRoll * viewBob * spd;
+        delta = bobFracSin * bobRoll * spd * viewBob;
         if (isCrouching) delta *= 3;
         if (bobCycle >= 128) delta *= -1;   // Swap direction for left foot
         roll += delta;
@@ -223,7 +227,7 @@ class QuakePlayer : DoomPlayer
 
         // Bob height
         double bobUp = CVar.GetCVar(bobUpCVar, player).GetFloat();
-        double bob = Min(bobFracSin * player.vel.Length() * ticRate * bobUp * viewBob, 6);
+        double bob = Min(bobFracSin * player.bob * viewBob * bobUp, 6);
 
         // Fall height
         if (landTics == 0)
@@ -311,13 +315,12 @@ class QuakePlayer : DoomPlayer
         Vector2 offset = (0, 0);
 
         // From bobbing
-        double spd = player.vel.Length() * ticRate;
         int xSign = bobCycle >= 128 ? -1 : 1;   // Swap direction for left foot
         Vector2 range = (weapon.bobRangeX * viewBob, weapon.bobRangeY * viewBob);
 
         // Have to simulate yaw/pitch w/ x/y offset
         // I don't think PSPrites have roll
-        offset += (xSign * spd * bobFracSin * 0.02 * range.x, spd * bobFracSin * 0.01 * range.y);
+        offset += (xSign * player.bob * bobFracSin * 0.02 * range.x, player.bob * bobFracSin * 0.01 * range.y);
 
         // Falling
         if (landTics < landDeflectTics)
@@ -332,7 +335,8 @@ class QuakePlayer : DoomPlayer
         }
 
         // Idle drift
-        spd += 40;
+        double spd = player.vel.Length() * ticRate + 40;
+        spd *= player.GetStillBob() + (assumeCVarDefaults ? 1 : 0);
         double fracSin = Sin(double(level.time) / ticRate * (360 / 6.28)) + 1;  // +1 so weapon never goes up
         offset += (-spd * fracSin * 0.02, spd * fracSin * 0.02);
 
@@ -363,6 +367,9 @@ class QuakePlayer : DoomPlayer
 
         bobCycle = (bobCycle + bobMove) % 256;
         bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
+
+        // player.bob is 35x bigger than in Doom; not sure if that matters for anything
+        player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (assumeCVarDefaults ? 0.75 : 0));
     }
 
 
