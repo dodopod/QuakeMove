@@ -44,6 +44,8 @@ class QuakePlayer : DoomPlayer
     const landSpeed = 8;
     const landDeflectTics = 0.1 * ticRate;
     const landReturnTics = 0.4 * ticRate;
+    const damageDeflectTics = 0.1 * ticRate;
+    const damageReturnTics = 0.4 * ticRate;
 
     const maxForwardMove = 12800;
     const maxSideMove = 10240;
@@ -91,8 +93,10 @@ class QuakePlayer : DoomPlayer
     double lastRoll;
     int landTics;
     int landChange;
-    int oldHealth;
+    //int oldDamageCount;
     int damageTics;
+    double damagePitch;
+    double damageRoll;
 
     bool isCrouching;
     bool isRunning;
@@ -121,13 +125,16 @@ class QuakePlayer : DoomPlayer
         if (!player.onGround) landTics = 0;
         else ++landTics;
 
-        if (oldHealth > health) damageTics = 0;
+        /*if (oldDamageCount < player.damageCount)
+        {
+            damageTics = 0;
+            double kick = Clamp(Max(40.0 / health, 1) * (player.damageCount - oldDamageCount), 5, 10);
+
+        }
         else ++damageTics;
-        oldHealth = health;
+        oldDamageCount = player.damageCount;*/
 
         HandleMovement();
-
-        Console.Printf("%d", damageTics);
 
         if (!predicting)
         {
@@ -204,6 +211,21 @@ class QuakePlayer : DoomPlayer
         // Cancel pitch & roll added last frame
         pitch -= lastPitch;
         roll -= lastRoll;
+
+        // Weapon kick should be handled by weapons themselves
+        // Damage kick
+        if (damageTics < damageDeflectTics)
+        {
+            double ratio = damageTics / damageDeflectTics;
+            pitch += ratio * damagePitch;
+            roll += ratio * damageRoll;
+        }
+        else if (damageTics < damageDeflectTics + damageReturnTics)
+        {
+            double ratio = 1 - (damageTics - damageDeflectTics) / damageReturnTics;
+            pitch += ratio * damagePitch;
+            roll += ratio * damageRoll;
+        }
 
         // Velocity angles
         // Yes, they depend on actual vel, not player-intended vel
