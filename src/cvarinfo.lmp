@@ -9,4 +9,7 @@ user bool CG_Speedometer = false;
 server bool G_StrafeJumping = true;
 server bool G_StrafeRunning = false;
 
+server float SV_FlyControl = 0.4;
+server float SV_WaterControl = 0.8;
+
 user noarchive cheat bool HelpMeMommy = false;

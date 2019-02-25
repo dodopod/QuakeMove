@@ -35,6 +35,11 @@ class QuakePlayer : DoomPlayer
     const bobUpCVar = "CG_BobUp";
     const straferunningCVar = "G_Straferunning";
     const strafejumpingCVar = "G_Strafejumping";
+    const airControlCVar = "SV_AirControl";
+    const waterControlCVar = "SV_WaterControl";
+    const flyControlCVar = "SV_FlyControl";
+
+    const airControlShift = 0.1 - 0.00390625;
 
     const landSpeed = 8;
     const landDeflectTics = 0.1 * ticRate;
@@ -52,10 +57,7 @@ class QuakePlayer : DoomPlayer
     const duckScale = 0.25;
     const swimScale = 0.5;
 
-    const groundAccelerate = 10.0 / ticRate;    // TODO: aircontrol, etc.
-    const airAccelerate = 1.0 / ticRate;
-    const waterAccelerate = 4.0 / ticRate;
-    const flyAccelerate = 8.0 / ticRate;
+    const acceleration = 10.0 * ups;
 
     const groundFriction = 6.0 / ticRate;
     const waterFriction = 1.0 / ticRate;
@@ -117,6 +119,8 @@ class QuakePlayer : DoomPlayer
         else ++landTics;
 
         HandleMovement();
+
+        if (player.damageCount) Console.Printf("%d", player.damageCount);
 
         if (!predicting)
         {
@@ -561,7 +565,7 @@ class QuakePlayer : DoomPlayer
                 wishSpeed = Min(wishSpeed, speed * waterScale);
             }
 
-            double accel = GetMoveFactor() * groundAccelerate;
+            double accel = GetMoveFactor() * acceleration;
             Accelerate(wishDir, wishSpeed, accel);
             BobAccelerate(wishDir, wishSpeed, accel);
 
@@ -616,7 +620,8 @@ class QuakePlayer : DoomPlayer
             Vector3 wishDir = wishVel.Unit();
             double wishSpeed = wishVel.Length();
 
-            double accel = GetMoveFactor() * flyAccelerate;
+            double accel = CVar.GetCVar(flyControlCVar).GetFloat();
+            accel *= GetMoveFactor() * acceleration;
             Accelerate(wishDir, wishSpeed, accel);
             BobAccelerate(wishDir, wishSpeed, accel);
 
@@ -668,7 +673,8 @@ class QuakePlayer : DoomPlayer
 
             wishSpeed = Min(wishSpeed, speed * swimScale);
 
-            double accel = GetMoveFactor() * waterAccelerate;
+            double accel = CVar.GetCVar(waterControlCVar).GetFloat();
+            accel *= GetMoveFactor() * acceleration;
             Accelerate(wishDir, wishSpeed, accel);
             BobAccelerate(wishDir, wishSpeed, accel);
 
@@ -740,7 +746,8 @@ class QuakePlayer : DoomPlayer
             Vector3 wishDir = wishVel.Unit();
             double wishSpeed = wishVel.Length();
 
-            double accel = GetMoveFactor() * airAccelerate;
+            double accel = CVar.GetCVar(airControlCVar).GetFloat() + (assumeCVarDefaults ? airControlShift : 0);
+            accel *= GetMoveFactor() * acceleration;
             Accelerate(wishDir, wishSpeed, accel);
             BobAccelerate(wishDir, wishSpeed, accel);
 
