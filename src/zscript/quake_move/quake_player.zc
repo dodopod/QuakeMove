@@ -91,6 +91,8 @@ class QuakePlayer : DoomPlayer
     double lastRoll;
     int landTics;
     int landChange;
+    int oldHealth;
+    int damageTics;
 
     bool isCrouching;
     bool isRunning;
@@ -115,12 +117,17 @@ class QuakePlayer : DoomPlayer
 		}
 
 		player.onGround = (pos.z <= floorZ) || bOnMobj || bMBFBouncer || (player.cheats & CF_NoClip2);
+
         if (!player.onGround) landTics = 0;
         else ++landTics;
 
+        if (oldHealth > health) damageTics = 0;
+        else ++damageTics;
+        oldHealth = health;
+
         HandleMovement();
 
-        if (player.damageCount) Console.Printf("%d", player.damageCount);
+        Console.Printf("%d", damageTics);
 
         if (!predicting)
         {
