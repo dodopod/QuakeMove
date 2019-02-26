@@ -229,12 +229,10 @@ class QuakePlayer : DoomPlayer
 
         double runPitch = CVar.GetCVar(runPitchCVar, player).GetFloat();
         double delta = (vel dot forward) * ticRate * runPitch * viewTilt;
-        //pitch += delta;
         lastPitch += delta;
 
         double runRoll = CVar.GetCVar(runRollCVar, player).GetFloat();
         delta = (vel dot right) * ticRate * runRoll * viewTilt;
-        //roll += delta;
         lastRoll += delta;
 
         // Bob angles
@@ -243,14 +241,12 @@ class QuakePlayer : DoomPlayer
         double bobPitch = CVar.GetCVar(bobPitchCVar, player).GetFloat();
         delta = bobFracSin * bobPitch * spd * viewBob;
         if (isCrouching) delta *= 3;
-        //pitch += delta;
         lastPitch += delta;
 
         double bobRoll = CVar.GetCVar(bobRollCVar, player).GetFloat();
         delta = bobFracSin * bobRoll * spd * viewBob;
         if (isCrouching) delta *= 3;
         if (bobCycle >= 128) delta *= -1;   // Swap direction for left foot
-        //roll += delta;
         lastRoll += delta;
 
         pitch += lastPitch;
