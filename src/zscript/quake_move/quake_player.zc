@@ -391,11 +391,17 @@ class QuakePlayer : DoomPlayer
         else if (isRunning) bobMove = 400.0 / ticRate;
         else                bobMove = 300.0 / ticRate;
 
+        double old = bobCycle;
         bobCycle = (bobCycle + bobMove) % 256;
         bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
 
         // player.bob is 35x bigger than in Doom; not sure if that matters for anything
         player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (assumeCVarDefaults ? 0.75 : 0));
+
+        if (bobCycle > 128 && old <= 128 || old > bobCycle)
+        {
+            A_PlaySound("*step", CHAN_BODY);
+        }
     }
 
 
