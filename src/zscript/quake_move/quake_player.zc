@@ -93,7 +93,6 @@ class QuakePlayer : DoomPlayer
     double lastRoll;
     int landTics;
     int landChange;
-    //int oldDamageCount;
     int damageTics;
     double damagePitch;
     double damageRoll;
