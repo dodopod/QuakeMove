@@ -93,7 +93,7 @@ class QuakePlayer : DoomPlayer
     double lastRoll;
     int landTics;
     int landChange;
-    int damageTics;
+    int damageTime;
     double damagePitch;
     double damageRoll;
 
@@ -123,8 +123,6 @@ class QuakePlayer : DoomPlayer
 
         if (!player.onGround) landTics = 0;
         else ++landTics;
-
-        ++damageTics;
 
         HandleMovement();
 
@@ -208,17 +206,21 @@ class QuakePlayer : DoomPlayer
 
         // Weapon kick should be handled by weapons themselves
         // Damage kick
-        if (damageTics < damageDeflectTics)
+        double ratio = level.time - damageTime;
+        if (ratio < damageDeflectTics)
         {
-            double ratio = damageTics / damageDeflectTics;
+            ratio /= damageDeflectTics;
             lastPitch += ratio * damagePitch;
             lastRoll += ratio * damageRoll;
         }
-        else if (damageTics < damageDeflectTics + damageReturnTics)
+        else
         {
-            double ratio = 1 - (damageTics - damageDeflectTics) / damageReturnTics;
-            lastPitch += ratio * damagePitch;
-            lastRoll += ratio * damageRoll;
+            ratio = 1.0 - (ratio - damageDeflectTics) / damageReturnTics;
+            if (ratio > 0)
+            {
+                lastPitch += ratio * damagePitch;
+                lastRoll += ratio * damageRoll;
+            }
         }
 
         // Velocity angles

@@ -6,7 +6,7 @@ class DamageKickHandler : EventHandler
 
         let mo = QuakePlayer(e.thing);
 
-        mo.damageTics = 0;
+        mo.damageTime = level.time;
 
         double scale = 40.0 / mo.health;
         double kick = Clamp(e.damage * scale, 5, 10);
