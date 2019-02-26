@@ -400,7 +400,9 @@ class QuakePlayer : DoomPlayer
 
         if (bobCycle > 128 && old <= 128 || old > bobCycle)
         {
-            A_PlaySound("*step", CHAN_BODY);
+            let handler = FootstepHandler(EventHandler.Find("FootstepHandler"));
+            if (handler) handler.Footstep(self);
+            else A_PlaySound("*step", CHAN_BODY);
         }
     }
 

@@ -1,5 +1,5 @@
 GameInfo
 {
     PlayerClasses = "QuakePlayer"
-    AddEventHandlers = "DamageKickHandler", "SpeedometerHandler", "StrafejumpHandler"
+    AddEventHandlers = "DamageKickHandler", "FootstepHandler", "SpeedometerHandler", "StrafejumpHandler"
 }
