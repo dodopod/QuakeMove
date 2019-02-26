@@ -13,7 +13,13 @@ class DamageKickHandler : EventHandler
 
         if (e.inflictor)
         {
+            Vector3 dir = (e.inflictor.pos - mo.pos).Unit();
 
+            Vector3 forward = (Cos(mo.pitch) * Cos(mo.angle), Cos(mo.pitch) * Sin(mo.angle), -Sin(mo.pitch));
+            Vector3 right = (Actor.AngleToVector(mo.angle - 90), 0);
+
+            mo.damageRoll = -kick * (dir dot right);
+            mo.damagePitch = -kick * (dir dot forward);
         }
         else    // Environmental damage
         {
