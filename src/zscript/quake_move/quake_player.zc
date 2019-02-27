@@ -114,6 +114,7 @@ class QuakePlayer : DoomPlayer
 
 		if (player.playerState == PST_Dead)
 		{   // Is there a reason CheckCrouch is before this in gzdoom.pk3?
+            Friction();
 			DeathThink();
 			return;
 		}
@@ -158,12 +159,6 @@ class QuakePlayer : DoomPlayer
 			player.mo.CheckDegeneration();
 			player.mo.CheckAirSupply();
         }
-    }
-
-    override void DeathThink()
-    {
-        Friction();
-        Super.DeathThink();
     }
 
 
