@@ -802,15 +802,16 @@ class QuakePlayer : DoomPlayer
             else landChange = -24;
         }
 
+        double land;
         if (landTics < landDeflectTics)
         {
             double f = landTics / landDeflectTics;
-            player.viewZ += landChange * f;
+            land += landChange * f;
         }
         else if (landTics < landDeflectTics + landReturnTics)
         {
             double f = 1 - (landTics - landDeflectTics) / landReturnTics;
-            player.viewZ += landChange * f;
+            land += landChange * f;
         }
 
 		double defaultviewheight = ViewHeight + player.crouchviewdelta;
@@ -842,7 +843,10 @@ class QuakePlayer : DoomPlayer
 		{
 			bob = 0;
 		}
-		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0. , 1.5)); // [SP] Allow DECORATE changes to view bobbing speed.
+
+        // [SP] Allow DECORATE changes to view bobbing speed.
+		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0. , 1.5)) + land;
+
 		if (Floorclip && player.playerstate != PST_DEAD
 			&& pos.Z <= floorz)
 		{
