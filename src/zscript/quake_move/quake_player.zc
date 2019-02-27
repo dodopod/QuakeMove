@@ -20,6 +20,7 @@ class QuakePlayer : DoomPlayer
         Player.JumpZ 270.0 * ups;
 
         MaxStepHeight 18;
+        MaxDropOffHeight 18;
 
         QuakePlayer.UpMove 0.5;
         QuakePlayer.ViewTilt 1.0;
@@ -50,6 +51,7 @@ class QuakePlayer : DoomPlayer
     const landReturnTics = 0.4 * ticRate;
     const damageDeflectTics = 0.1 * ticRate;
     const damageReturnTics = 0.4 * ticRate;
+    const stepReturnTics = 0.2 * ticRate;
 
     const maxForwardMove = 12800;
     const maxSideMove = 10240;
@@ -125,7 +127,17 @@ class QuakePlayer : DoomPlayer
 			MorphPlayerThink();
 		}
 
+        bool wasOnGround = player.onGround;
 		player.onGround = (pos.z <= floorZ) || bOnMobj || bMBFBouncer || (player.cheats & CF_NoClip2);
+
+        // Stick player to ground when going down stairs
+        if (wasOnGround && !player.onGround && pos.z - GetZAt() < maxDropOffHeight)
+        {
+            player.viewHeight += (pos.z - GetZAt());
+            player.deltaViewHeight -= (pos.z - GetZAt()) / 8;
+            SetZ(GetZAt());
+            player.onGround = true;
+        }
 
         if (!player.onGround) landTics = 0;
         else ++landTics;
@@ -783,6 +795,11 @@ class QuakePlayer : DoomPlayer
         double bobUp = CVar.GetCVar(bobUpCVar, player).GetFloat();
         double bob = Min(bobFracSin * player.bob * viewBob * bobUp, 6);
 
+		if (player.morphTics)
+		{
+			bob = 0;
+		}
+
         // Fall height
         if (landTics == 0)
         {
@@ -792,15 +809,16 @@ class QuakePlayer : DoomPlayer
             else landChange = -24;
         }
 
+        double land;
         if (landTics < landDeflectTics)
         {
             double f = landTics / landDeflectTics;
-            player.viewZ += landChange * f;
+            land += landChange * f;
         }
         else if (landTics < landDeflectTics + landReturnTics)
         {
             double f = 1 - (landTics - landDeflectTics) / landReturnTics;
-            player.viewZ += landChange * f;
+            land += landChange * f;
         }
 
 		double defaultviewheight = ViewHeight + player.crouchviewdelta;
@@ -815,36 +833,23 @@ class QuakePlayer : DoomPlayer
 			return;
 		}
 
+        // Step offset
 		// move viewheight
 		if (player.playerstate == PST_LIVE)
-		{
-			player.viewheight += player.deltaviewheight;
+        {
+            player.viewHeight += player.deltaViewHeight * 8 / stepReturnTics;
 
-			if (player.viewheight > defaultviewheight)
-			{
-				player.viewheight = defaultviewheight;
-				player.deltaviewheight = 0;
-			}
-			else if (player.viewheight < (defaultviewheight/2))
-			{
-				player.viewheight = defaultviewheight/2;
-				if (player.deltaviewheight <= 0)
-					player.deltaviewheight = 1 / 65536.;
-			}
+            if (player.deltaViewHeight < 0 && player.ViewHeight < defaultViewHeight
+                || player.deltaViewHeight > 0 && player.ViewHeight > defaultViewHeight)
+            {
+                player.viewHeight = defaultViewHeight;
+                player.deltaViewHeight = 0;
+            }
+        }
 
-			if (player.deltaviewheight)
-			{
-				player.deltaviewheight += 0.25;
-				if (!player.deltaviewheight)
-					player.deltaviewheight = 1/65536.;
-			}
-		}
+        // [SP] Allow DECORATE changes to view bobbing speed.
+		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0. , 1.5)) + land;
 
-		if (player.morphTics)
-		{
-			bob = 0;
-		}
-		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0. , 1.5)); // [SP] Allow DECORATE changes to view bobbing speed.
 		if (Floorclip && player.playerstate != PST_DEAD
 			&& pos.Z <= floorz)
 		{
