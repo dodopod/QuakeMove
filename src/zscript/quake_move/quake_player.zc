@@ -167,6 +167,10 @@ class QuakePlayer : DoomPlayer
     }
 
 
+    //////////////
+    // Movement //
+    //////////////
+
     override void HandleMovement()
     {
         FixPlayerInput();
@@ -201,218 +205,6 @@ class QuakePlayer : DoomPlayer
 
         Footsteps();
         CalcHeight();   // View bob
-    }
-
-
-    // View and weapon bob
-
-    // Adapted from cg_view.c: CG_OffsetFirstPersonView and player.txt: CalcHeight
-    override void CalcHeight()
-    {
-        // Cancel pitch & roll added last frame
-        pitch -= lastPitch;
-        roll -= lastRoll;
-        lastPitch = 0;
-        lastRoll = 0;
-
-        // Weapon kick should be handled by weapons themselves
-        // Damage kick
-        if (damageTics < damageDeflectTics)
-        {
-            double ratio = damageTics / damageDeflectTics;
-            lastPitch += ratio * damagePitch;
-            lastRoll += ratio * damageRoll;
-        }
-        else if (damageTics < damageDeflectTics + damageReturnTics)
-        {
-            double ratio = 1 - (damageTics - damageDeflectTics) / damageReturnTics;
-            lastPitch += ratio * damagePitch;
-            lastRoll += ratio * damageRoll;
-        }
-
-        // Velocity angles
-        // Yes, they depend on actual vel, not player-intended vel
-        Vector3 forward = (Cos(pitch) * Cos(angle), Cos(pitch) * Sin(angle), -Sin(pitch));
-        Vector3 right = (AngleToVector(angle - 90), 0);
-
-        double runPitch = CVar.GetCVar(runPitchCVar, player).GetFloat();
-        double delta = (vel dot forward) * ticRate * runPitch * viewTilt;
-        lastPitch += delta;
-
-        double runRoll = CVar.GetCVar(runRollCVar, player).GetFloat();
-        delta = (vel dot right) * ticRate * runRoll * viewTilt;
-        lastRoll += delta;
-
-        // Bob angles
-        double spd = Max(player.bob, 200);   // Make sure bob is obvious at low speeds
-
-        double bobPitch = CVar.GetCVar(bobPitchCVar, player).GetFloat();
-        delta = bobFracSin * bobPitch * spd * viewBob;
-        if (isCrouching) delta *= 3;
-        lastPitch += delta;
-
-        double bobRoll = CVar.GetCVar(bobRollCVar, player).GetFloat();
-        delta = bobFracSin * bobRoll * spd * viewBob;
-        if (isCrouching) delta *= 3;
-        if (bobCycle >= 128) delta *= -1;   // Swap direction for left foot
-        lastRoll += delta;
-
-        pitch += lastPitch;
-        roll += lastRoll;
-
-        // Bob height
-        double bobUp = CVar.GetCVar(bobUpCVar, player).GetFloat();
-        double bob = Min(bobFracSin * player.bob * viewBob * bobUp, 6);
-
-        // Fall height
-        if (landTics == 0)
-        {
-            if (-vel.z < landSpeed) landChange = 0;
-            else if (-vel.z < gruntSpeed) landChange = -8;
-            else if (-vel.z < fallingScreamMinSpeed) landChange = -16;
-            else landChange = -24;
-        }
-
-        if (landTics < landDeflectTics)
-        {
-            double f = landTics / landDeflectTics;
-            player.viewZ += landChange * f;
-        }
-        else if (landTics < landDeflectTics + landReturnTics)
-        {
-            double f = 1 - (landTics - landDeflectTics) / landReturnTics;
-            player.viewZ += landChange * f;
-        }
-
-		double defaultviewheight = ViewHeight + player.crouchviewdelta;
-
-		if (player.cheats & CF_NOVELOCITY)
-		{
-			player.viewz = pos.Z + defaultviewheight;
-
-			if (player.viewz > ceilingz-4)
-				player.viewz = ceilingz-4;
-
-			return;
-		}
-
-		// move viewheight
-		if (player.playerstate == PST_LIVE)
-		{
-			player.viewheight += player.deltaviewheight;
-
-			if (player.viewheight > defaultviewheight)
-			{
-				player.viewheight = defaultviewheight;
-				player.deltaviewheight = 0;
-			}
-			else if (player.viewheight < (defaultviewheight/2))
-			{
-				player.viewheight = defaultviewheight/2;
-				if (player.deltaviewheight <= 0)
-					player.deltaviewheight = 1 / 65536.;
-			}
-
-			if (player.deltaviewheight)
-			{
-				player.deltaviewheight += 0.25;
-				if (!player.deltaviewheight)
-					player.deltaviewheight = 1/65536.;
-			}
-		}
-
-		if (player.morphTics)
-		{
-			bob = 0;
-		}
-		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0. , 1.5)); // [SP] Allow DECORATE changes to view bobbing speed.
-		if (Floorclip && player.playerstate != PST_DEAD
-			&& pos.Z <= floorz)
-		{
-			player.viewz -= Floorclip;
-		}
-		if (player.viewz > ceilingz - 4)
-		{
-			player.viewz = ceilingz - 4;
-		}
-		if (player.viewz < floorz + 4)
-		{
-			player.viewz = floorz + 4;
-		}
-    }
-
-
-    // Adapted from cg_weapons.c: CG_CalculateWeaponPosition
-    override Vector2 BobWeapon(double ticFrac)
-    {
-        let weapon = player.readyWeapon;
-
-        Vector2 offset = (0, 0);
-
-        // From bobbing
-        int xSign = bobCycle >= 128 ? -1 : 1;   // Swap direction for left foot
-        Vector2 range = (weapon.bobRangeX * viewBob, weapon.bobRangeY * viewBob);
-
-        // Have to simulate yaw/pitch w/ x/y offset
-        // I don't think PSPrites have roll
-        offset += (xSign * player.bob * bobFracSin * 0.02 * range.x, player.bob * bobFracSin * 0.01 * range.y);
-
-        // Falling
-        if (landTics < landDeflectTics)
-        {
-            double f = landTics / landDeflectTics;
-            offset.y -= landChange * f;
-        }
-        else if (landTics < landDeflectTics + landReturnTics)
-        {
-            double f = 1 - (landTics - landDeflectTics) / landReturnTics;
-            offset.y -= landChange * f;
-        }
-
-        // Idle drift
-        double spd = player.vel.Length() * ticRate + 40;
-        spd *= player.GetStillBob() + (assumeCVarDefaults ? 1 : 0);
-        double fracSin = Sin(double(level.time) / ticRate * (360 / 6.28)) + 1;  // +1 so weapon never goes up
-        offset += (-spd * fracSin * 0.02, spd * fracSin * 0.02);
-
-        return offset;
-    }
-
-
-    // Adapted from bg_pmove.c: PM_Footsteps
-    virtual void Footsteps()
-    {
-        UserCmd cmd = player.cmd;
-
-        player.vel = vel.xy;
-
-        // airborne leaves position in cycle intact, but doesn't advance
-        if (!player.onGround) return;
-
-        if (!cmd.forwardMove && !cmd.sideMove)
-        {
-            if (vel.xy.Length() < 5 * ups) bobCycle = 0;
-            return;
-        }
-
-        double bobMove;
-        if (isCrouching)    bobMove = 500.0 / ticRate;
-        else if (isRunning) bobMove = 400.0 / ticRate;
-        else                bobMove = 300.0 / ticRate;
-
-        double old = bobCycle;
-        bobCycle = (bobCycle + bobMove) % 256;
-        bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
-
-        // player.bob is 35x bigger than in Doom; not sure if that matters for anything
-        player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (assumeCVarDefaults ? 0.75 : 0));
-
-        // Spawn footstep every half-cycle
-        if (bobCycle > 128 && old <= 128 || old > bobCycle)
-        {
-            Actor step = Spawn(footstepClass, pos);
-            step.master = self;
-        }
     }
 
 
@@ -932,11 +724,224 @@ class QuakePlayer : DoomPlayer
     }
 
 
+    /////////////////////////
+    // View and weapon bob //
+    /////////////////////////
+
+    // Adapted from cg_view.c: CG_OffsetFirstPersonView and player.txt: CalcHeight
+    override void CalcHeight()
+    {
+        // Cancel pitch & roll added last frame
+        pitch -= lastPitch;
+        roll -= lastRoll;
+        lastPitch = 0;
+        lastRoll = 0;
+
+        // Weapon kick should be handled by weapons themselves
+        // Damage kick
+        if (damageTics < damageDeflectTics)
+        {
+            double ratio = damageTics / damageDeflectTics;
+            lastPitch += ratio * damagePitch;
+            lastRoll += ratio * damageRoll;
+        }
+        else if (damageTics < damageDeflectTics + damageReturnTics)
+        {
+            double ratio = 1 - (damageTics - damageDeflectTics) / damageReturnTics;
+            lastPitch += ratio * damagePitch;
+            lastRoll += ratio * damageRoll;
+        }
+
+        // Velocity angles
+        // Yes, they depend on actual vel, not player-intended vel
+        Vector3 forward = (Cos(pitch) * Cos(angle), Cos(pitch) * Sin(angle), -Sin(pitch));
+        Vector3 right = (AngleToVector(angle - 90), 0);
+
+        double runPitch = CVar.GetCVar(runPitchCVar, player).GetFloat();
+        double delta = (vel dot forward) * ticRate * runPitch * viewTilt;
+        lastPitch += delta;
+
+        double runRoll = CVar.GetCVar(runRollCVar, player).GetFloat();
+        delta = (vel dot right) * ticRate * runRoll * viewTilt;
+        lastRoll += delta;
+
+        // Bob angles
+        double spd = Max(player.bob, 200);   // Make sure bob is obvious at low speeds
+
+        double bobPitch = CVar.GetCVar(bobPitchCVar, player).GetFloat();
+        delta = bobFracSin * bobPitch * spd * viewBob;
+        if (isCrouching) delta *= 3;
+        lastPitch += delta;
+
+        double bobRoll = CVar.GetCVar(bobRollCVar, player).GetFloat();
+        delta = bobFracSin * bobRoll * spd * viewBob;
+        if (isCrouching) delta *= 3;
+        if (bobCycle >= 128) delta *= -1;   // Swap direction for left foot
+        lastRoll += delta;
+
+        pitch += lastPitch;
+        roll += lastRoll;
+
+        // Bob height
+        double bobUp = CVar.GetCVar(bobUpCVar, player).GetFloat();
+        double bob = Min(bobFracSin * player.bob * viewBob * bobUp, 6);
+
+        // Fall height
+        if (landTics == 0)
+        {
+            if (-vel.z < landSpeed) landChange = 0;
+            else if (-vel.z < gruntSpeed) landChange = -8;
+            else if (-vel.z < fallingScreamMinSpeed) landChange = -16;
+            else landChange = -24;
+        }
+
+        if (landTics < landDeflectTics)
+        {
+            double f = landTics / landDeflectTics;
+            player.viewZ += landChange * f;
+        }
+        else if (landTics < landDeflectTics + landReturnTics)
+        {
+            double f = 1 - (landTics - landDeflectTics) / landReturnTics;
+            player.viewZ += landChange * f;
+        }
+
+		double defaultviewheight = ViewHeight + player.crouchviewdelta;
+
+		if (player.cheats & CF_NOVELOCITY)
+		{
+			player.viewz = pos.Z + defaultviewheight;
+
+			if (player.viewz > ceilingz-4)
+				player.viewz = ceilingz-4;
+
+			return;
+		}
+
+		// move viewheight
+		if (player.playerstate == PST_LIVE)
+		{
+			player.viewheight += player.deltaviewheight;
+
+			if (player.viewheight > defaultviewheight)
+			{
+				player.viewheight = defaultviewheight;
+				player.deltaviewheight = 0;
+			}
+			else if (player.viewheight < (defaultviewheight/2))
+			{
+				player.viewheight = defaultviewheight/2;
+				if (player.deltaviewheight <= 0)
+					player.deltaviewheight = 1 / 65536.;
+			}
+
+			if (player.deltaviewheight)
+			{
+				player.deltaviewheight += 0.25;
+				if (!player.deltaviewheight)
+					player.deltaviewheight = 1/65536.;
+			}
+		}
+
+		if (player.morphTics)
+		{
+			bob = 0;
+		}
+		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0. , 1.5)); // [SP] Allow DECORATE changes to view bobbing speed.
+		if (Floorclip && player.playerstate != PST_DEAD
+			&& pos.Z <= floorz)
+		{
+			player.viewz -= Floorclip;
+		}
+		if (player.viewz > ceilingz - 4)
+		{
+			player.viewz = ceilingz - 4;
+		}
+		if (player.viewz < floorz + 4)
+		{
+			player.viewz = floorz + 4;
+		}
+    }
+
+
+    // Adapted from cg_weapons.c: CG_CalculateWeaponPosition
+    override Vector2 BobWeapon(double ticFrac)
+    {
+        let weapon = player.readyWeapon;
+
+        Vector2 offset = (0, 0);
+
+        // From bobbing
+        int xSign = bobCycle >= 128 ? -1 : 1;   // Swap direction for left foot
+        Vector2 range = (weapon.bobRangeX * viewBob, weapon.bobRangeY * viewBob);
+
+        // Have to simulate yaw/pitch w/ x/y offset
+        // I don't think PSPrites have roll
+        offset += (xSign * player.bob * bobFracSin * 0.02 * range.x, player.bob * bobFracSin * 0.01 * range.y);
+
+        // Falling
+        if (landTics < landDeflectTics)
+        {
+            double f = landTics / landDeflectTics;
+            offset.y -= landChange * f;
+        }
+        else if (landTics < landDeflectTics + landReturnTics)
+        {
+            double f = 1 - (landTics - landDeflectTics) / landReturnTics;
+            offset.y -= landChange * f;
+        }
+
+        // Idle drift
+        double spd = player.vel.Length() * ticRate + 40;
+        spd *= player.GetStillBob() + (assumeCVarDefaults ? 1 : 0);
+        double fracSin = Sin(double(level.time) / ticRate * (360 / 6.28)) + 1;  // +1 so weapon never goes up
+        offset += (-spd * fracSin * 0.02, spd * fracSin * 0.02);
+
+        return offset;
+    }
+
+
+    // Adapted from bg_pmove.c: PM_Footsteps
+    virtual void Footsteps()
+    {
+        UserCmd cmd = player.cmd;
+
+        player.vel = vel.xy;
+
+        // airborne leaves position in cycle intact, but doesn't advance
+        if (!player.onGround) return;
+
+        if (!cmd.forwardMove && !cmd.sideMove)
+        {
+            if (vel.xy.Length() < 5 * ups) bobCycle = 0;
+            return;
+        }
+
+        double bobMove;
+        if (isCrouching)    bobMove = 500.0 / ticRate;
+        else if (isRunning) bobMove = 400.0 / ticRate;
+        else                bobMove = 300.0 / ticRate;
+
+        double old = bobCycle;
+        bobCycle = (bobCycle + bobMove) % 256;
+        bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
+
+        // player.bob is 35x bigger than in Doom; not sure if that matters for anything
+        player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (assumeCVarDefaults ? 0.75 : 0));
+
+        // Spawn footstep every half-cycle
+        if (bobCycle > 128 && old <= 128 || old > bobCycle)
+        {
+            Actor step = Spawn(footstepClass, pos);
+            step.master = self;
+        }
+    }
+
+
     bool IsPressed(int bt)
     {
         return player.cmd.buttons & bt;
     }
-
 
     bool JustPressed(int bt)
     {
