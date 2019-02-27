@@ -42,6 +42,8 @@ class QuakePlayer : DoomPlayer
     const flyControlCVar = "SV_FlyControl";
 
     const airControlShift = 0.1 - 0.00390625;
+    const stillBobShift = 1;
+    const moveBobShift = 0.75;
 
     const landSpeed = 8;
     const landDeflectTics = 0.1 * ticRate;
@@ -888,7 +890,7 @@ class QuakePlayer : DoomPlayer
 
         // Idle drift
         double spd = player.vel.Length() * ticRate + 40;
-        spd *= player.GetStillBob() + (assumeCVarDefaults ? 1 : 0);
+        spd *= player.GetStillBob() + (assumeCVarDefaults ? stillBobShift : 0);
         double fracSin = Sin(double(level.time) / ticRate * (360 / 6.28)) + 1;  // +1 so weapon never goes up
         offset += (-spd * fracSin * 0.02, spd * fracSin * 0.02);
 
@@ -922,7 +924,7 @@ class QuakePlayer : DoomPlayer
         bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
 
         // player.bob is 35x bigger than in Doom; not sure if that matters for anything
-        player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (assumeCVarDefaults ? 0.75 : 0));
+        player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (assumeCVarDefaults ? moveBobShift : 0));
 
         // Spawn footstep every half-cycle
         if (bobCycle > 128 && old <= 128 || old > bobCycle)
