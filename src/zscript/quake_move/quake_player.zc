@@ -160,6 +160,12 @@ class QuakePlayer : DoomPlayer
         }
     }
 
+    override void DeathThink()
+    {
+        Friction();
+        Super.DeathThink();
+    }
+
 
     override void HandleMovement()
     {
