@@ -9,6 +9,7 @@ class QuakePlayer : DoomPlayer
 
     Property ViewBob : viewBob; // Alias for Player.ViewBob
     Property ViewTilt : viewTilt;
+    Property FootstepClass : footstepClass;
 
     Property AssumeCVarDefaults : AssumeCVarDefaults;
 
@@ -22,6 +23,7 @@ class QuakePlayer : DoomPlayer
 
         QuakePlayer.UpMove 0.5;
         QuakePlayer.ViewTilt 1.0;
+        QuakePlayer.FootstepClass "Footstep";
         QuakePlayer.AssumeCVarDefaults true;
 
         +NoFriction
@@ -86,6 +88,7 @@ class QuakePlayer : DoomPlayer
 
     double upMove;
     double viewTilt;
+    class<Actor> footstepClass;
 
     double bobCycle;
     double bobFracSin;
@@ -398,9 +401,11 @@ class QuakePlayer : DoomPlayer
         // player.bob is 35x bigger than in Doom; not sure if that matters for anything
         player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (assumeCVarDefaults ? 0.75 : 0));
 
+        // Spawn footstep every half-cycle
         if (bobCycle > 128 && old <= 128 || old > bobCycle)
         {
-            A_PlaySound("*step", CHAN_BODY);
+            Actor step = Spawn(footstepClass, pos);
+            step.master = self;
         }
     }
 

@@ -1,0 +1,14 @@
+class Footstep : Actor
+{
+    override void PostBeginPlay()
+    {
+        if (!master.player) return;
+
+        if (master.player.vel.Length() <= master.speed / 2) return;
+        else if (master.player.onGround && master.waterLevel == QuakePlayer.WL_Feet) master.A_PlaySound("*splash");
+        else if (master.waterLevel == QuakePlayer.WL_Waist) master.A_PlaySound("*swim");
+        else if (master.player.onGround) master.A_PlaySound("*step");
+
+        Destroy();
+    }
+}
