@@ -51,6 +51,7 @@ class QuakePlayer : DoomPlayer
     const landReturnTics = 0.4 * ticRate;
     const damageDeflectTics = 0.1 * ticRate;
     const damageReturnTics = 0.4 * ticRate;
+    const stepTics = 0.2 * ticRate;
 
     const maxForwardMove = 12800;
     const maxSideMove = 10240;
@@ -130,6 +131,8 @@ class QuakePlayer : DoomPlayer
 		player.onGround = (pos.z <= floorZ) || bOnMobj || bMBFBouncer || (player.cheats & CF_NoClip2);
         if (wasOnGround && !player.onGround && pos.z - GetZAt() < maxDropOffHeight)
         {
+            player.viewHeight += (pos.z - GetZAt());
+            player.deltaViewHeight -= (pos.z - GetZAt()) / 8;
             SetZ(GetZAt());
             player.onGround = true;
         }
@@ -824,7 +827,17 @@ class QuakePlayer : DoomPlayer
 
 		// move viewheight
 		if (player.playerstate == PST_LIVE)
-		{
+        {
+            player.viewHeight += player.deltaViewHeight * 8 / stepTics;
+
+            if (player.deltaViewHeight < 0 && player.ViewHeight < defaultViewHeight
+                || player.deltaViewHeight > 0 && player.ViewHeight > defaultViewHeight)
+            {
+                player.viewHeight = defaultViewHeight;
+                player.deltaViewHeight = 0;
+            }
+        }
+		/*{
 			player.viewheight += player.deltaviewheight;
 
 			if (player.viewheight > defaultviewheight)
@@ -845,7 +858,7 @@ class QuakePlayer : DoomPlayer
 				if (!player.deltaviewheight)
 					player.deltaviewheight = 1/65536.;
 			}
-		}
+		}*/
 
 		if (player.morphTics)
 		{
@@ -929,8 +942,6 @@ class QuakePlayer : DoomPlayer
         double old = bobCycle;
         bobCycle = (bobCycle + bobMove) % 256;
         bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
-
-        Console.Printf("%.2f", bobCycle);
 
         // player.bob is 35x bigger than in Doom; not sure if that matters for anything
         player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (assumeCVarDefaults ? moveBobShift : 0));
