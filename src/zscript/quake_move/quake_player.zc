@@ -20,6 +20,7 @@ class QuakePlayer : DoomPlayer
         Player.JumpZ 270.0 * ups;
 
         MaxStepHeight 18;
+        MaxDropOffHeight 18;
 
         QuakePlayer.UpMove 0.5;
         QuakePlayer.ViewTilt 1.0;
@@ -125,7 +126,13 @@ class QuakePlayer : DoomPlayer
 			MorphPlayerThink();
 		}
 
+        bool wasOnGround = player.onGround;
 		player.onGround = (pos.z <= floorZ) || bOnMobj || bMBFBouncer || (player.cheats & CF_NoClip2);
+        if (wasOnGround && !player.onGround && pos.z - GetZAt() < maxDropOffHeight)
+        {
+            SetZ(GetZAt());
+            player.onGround = true;
+        }
 
         if (!player.onGround) landTics = 0;
         else ++landTics;
@@ -922,6 +929,8 @@ class QuakePlayer : DoomPlayer
         double old = bobCycle;
         bobCycle = (bobCycle + bobMove) % 256;
         bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
+
+        Console.Printf("%.2f", bobCycle);
 
         // player.bob is 35x bigger than in Doom; not sure if that matters for anything
         player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (assumeCVarDefaults ? moveBobShift : 0));
