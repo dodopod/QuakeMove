@@ -837,28 +837,6 @@ class QuakePlayer : DoomPlayer
                 player.deltaViewHeight = 0;
             }
         }
-		/*{
-			player.viewheight += player.deltaviewheight;
-
-			if (player.viewheight > defaultviewheight)
-			{
-				player.viewheight = defaultviewheight;
-				player.deltaviewheight = 0;
-			}
-			else if (player.viewheight < (defaultviewheight/2))
-			{
-				player.viewheight = defaultviewheight/2;
-				if (player.deltaviewheight <= 0)
-					player.deltaviewheight = 1 / 65536.;
-			}
-
-			if (player.deltaviewheight)
-			{
-				player.deltaviewheight += 0.25;
-				if (!player.deltaviewheight)
-					player.deltaviewheight = 1/65536.;
-			}
-		}*/
 
 		if (player.morphTics)
 		{
