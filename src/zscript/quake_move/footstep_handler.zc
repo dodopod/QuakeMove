@@ -1,5 +1,8 @@
 class FootstepHandler : EventHandler
 {
+    Array<String> textures;
+    Array<String> sounds;
+
     virtual void Footstep(QuakePlayer mo)
     {
         if (mo.player.vel.Length() <= mo.speed / 2) return;  // No sound when player is walking
@@ -10,6 +13,16 @@ class FootstepHandler : EventHandler
 
     virtual String GetFootstepForSurface(Sector sec)
     {
+        String tex = TexMan.GetName(sec.GetTexture(Sector.floor));
+
+        int i = 0;
+        for (; i < textures.Size(); ++i)
+        {
+            if (textures[i] ~== tex) break;
+        }
+
+        if (i < textures.Size()) return sounds[i];
+
         return "*step";
     }
 }
