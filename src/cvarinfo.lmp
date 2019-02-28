@@ -11,5 +11,6 @@ server bool G_StrafeRunning = false;
 
 server float SV_FlyControl = 0.4;
 server float SV_WaterControl = 0.8;
+server bool SV_AssumeCVarDefaults = true;
 
 user noarchive cheat bool HelpMeMommy = false;
