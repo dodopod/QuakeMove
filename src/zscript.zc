@@ -1,4 +1,4 @@
-version "3.7"
+version "3.7.2"
 
 #include "zscript/quake_move/quake_player.zc"
 #include "zscript/quake_move/footstep.zc"
