@@ -1,6 +1,6 @@
 // Code adapted from PlayerPawn in gzdoom.pk3 and various functions from Quake 3
 
-class QuakePlayer : PlayerPawn
+class QuakePlayer : DoomPlayer
 {
     // Aliases for Player.Forward/SideMove
     Property ForwardMove : forwardMove1, forwardMove2;
