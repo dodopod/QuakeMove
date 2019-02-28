@@ -11,8 +11,6 @@ class QuakePlayer : DoomPlayer
     Property ViewTilt : viewTilt;
     Property FootstepClass : footstepClass;
 
-    Property AssumeCVarDefaults : AssumeCVarDefaults;
-
 
     Default
     {
@@ -25,7 +23,6 @@ class QuakePlayer : DoomPlayer
         QuakePlayer.UpMove 0.5;
         QuakePlayer.ViewTilt 1.0;
         QuakePlayer.FootstepClass "Footstep";
-        QuakePlayer.AssumeCVarDefaults true;
 
         +NoFriction
     }
@@ -41,6 +38,7 @@ class QuakePlayer : DoomPlayer
     const airControlCVar = "SV_AirControl";
     const waterControlCVar = "SV_WaterControl";
     const flyControlCVar = "SV_FlyControl";
+    const assumeCVarDefaultsCVar = "SV_AssumeCVarDefaults";
 
     const airControlShift = 0.1 - 0.00390625;
     const stillBobShift = 1;
@@ -70,8 +68,6 @@ class QuakePlayer : DoomPlayer
     const groundFriction = 6.0 / ticRate;
     const waterFriction = 1.0 / ticRate;
     const flightFriction = 5.0 / ticRate;
-
-    meta bool assumeCVarDefaults;
 
     enum EWaterLevel
     {
@@ -586,7 +582,8 @@ class QuakePlayer : DoomPlayer
             Vector3 wishDir = wishVel.Unit();
             double wishSpeed = wishVel.Length();
 
-            double accel = CVar.GetCVar(airControlCVar).GetFloat() + (assumeCVarDefaults ? airControlShift : 0);
+            bool shift = CVar.GetCVar(assumeCVarDefaultsCVar).getBool();
+            double accel = CVar.GetCVar(airControlCVar).GetFloat() + (shift ? airControlShift : 0);
             accel *= GetMoveFactor() * acceleration;
             Accelerate(wishDir, wishSpeed, accel);
             BobAccelerate(wishDir, wishSpeed, accel);
@@ -895,7 +892,8 @@ class QuakePlayer : DoomPlayer
 
         // Idle drift
         double spd = player.vel.Length() * ticRate + 40;
-        spd *= player.GetStillBob() + (assumeCVarDefaults ? stillBobShift : 0);
+        bool shift = CVar.GetCVar(assumeCVarDefaultsCVar).getBool();
+        spd *= player.GetStillBob() + (shift ? stillBobShift : 0);
         double fracSin = Sin(double(level.time) / ticRate * (360 / 6.28)) + 1;  // +1 so weapon never goes up
         offset += (-spd * fracSin * 0.02, spd * fracSin * 0.02);
 
@@ -929,7 +927,8 @@ class QuakePlayer : DoomPlayer
         bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
 
         // player.bob is 35x bigger than in Doom; not sure if that matters for anything
-        player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (assumeCVarDefaults ? moveBobShift : 0));
+        bool shift = CVar.GetCVar(assumeCVarDefaultsCVar).getBool();
+        player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (shift ? moveBobShift : 0));
 
         // Spawn footstep every half-cycle
         if (bobCycle > 128 && old <= 128 || old > bobCycle)
