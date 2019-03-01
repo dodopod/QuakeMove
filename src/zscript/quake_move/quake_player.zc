@@ -930,7 +930,8 @@ class QuakePlayer : PlayerPawn
 
         if (!cmd.forwardMove && !cmd.sideMove)
         {
-            if (vel.xy.Length() < 5 * ups) bobCycle = 0;
+            // This is in Quake 3, but causes bob to jerk back to center when player stops
+            //if (vel.xy.Length() < 5 * ups) bobCycle = 0;
             return;
         }
 
