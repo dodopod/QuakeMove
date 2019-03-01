@@ -815,9 +815,9 @@ class QuakePlayer : PlayerPawn
         if (landTics == 0)
         {
             if (-vel.z < landSpeed) landChange = 0;
-            else if (-vel.z < gruntSpeed) landChange = -1;
-            else if (-vel.z < fallingScreamMinSpeed) landChange = -2;
-            else landChange = -3;
+            else if (-vel.z < gruntSpeed) landChange = -8;
+            else if (-vel.z < fallingScreamMinSpeed) landChange = -16;
+            else landChange = -24;
         }
 
         double landDown = CVar.GetCVar(landDownCVar, player).GetFloat();
