@@ -821,7 +821,7 @@ class QuakePlayer : PlayerPawn
         }
 
         double landDown = CVar.GetCVar(landDownCVar, player).GetFloat();
-        double land;
+        double land = 0;
         if (landTics < landDeflectTics)
         {
             double f = landTics / landDeflectTics;
