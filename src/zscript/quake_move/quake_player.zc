@@ -654,7 +654,7 @@ class QuakePlayer : PlayerPawn
 
         if (waterLevel <= WL_Feet && player.onGround)
         {
-            double control = spd < stopSpeed ? stopSpeed : spd;
+            double control = Max(spd, stopSpeed);
             drop += control * groundFriction;
             drop *= GetMoveFactor();
         }
@@ -862,8 +862,6 @@ class QuakePlayer : PlayerPawn
         // [SP] Allow DECORATE changes to view bobbing speed.
 		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0. , 1.5)) + land;
 
-        Console.Printf("%.2f", land);
-
 		if (Floorclip && player.playerstate != PST_DEAD
 			&& pos.Z <= floorz)
 		{
@@ -932,7 +930,8 @@ class QuakePlayer : PlayerPawn
 
         if (!cmd.forwardMove && !cmd.sideMove)
         {
-            if (vel.xy.Length() < 5 * ups) bobCycle = 0;
+            // This is in Quake 3, but causes bob to jerk back to center when player stops
+            //if (vel.xy.Length() < 5 * ups) bobCycle = 0;
             return;
         }
 
