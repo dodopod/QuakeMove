@@ -1,5 +1,4 @@
-user bool CG_QuakeWeaponBob = true;
-user bool CG_QuakeViewBob = true;
+user bool CG_QuakeBob = true;
 
 user float CG_RunPitch = 0.002;
 user float CG_RunRoll = 0.005;
