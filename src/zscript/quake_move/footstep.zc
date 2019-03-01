@@ -16,7 +16,7 @@ class Footstep : Actor
 
             if (master.waterLevel == WL_NotInWater)
             {
-                if (master.player.onGround && master.player.vel.Length() > master.speed / 2)
+                if (master.player.onGround && master.player.vel.Length() > master.speed * 0.6)
                 {
                     stepSound = "*step";
                 }
