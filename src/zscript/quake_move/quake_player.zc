@@ -135,6 +135,10 @@ class QuakePlayer : PlayerPawn
             player.onGround = true;
         }
 
+        // I'm not sure how this is done in PlayerPawn
+        // Put player back in idle state after moving
+        if (!player.cmd.forwardMove && !player.cmd.sideMove && (!player.onGround || !player.vel.Length())) PlayIdle();
+
         if (!player.onGround) landTics = 0;
         else ++landTics;
 
