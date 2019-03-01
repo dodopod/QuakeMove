@@ -654,7 +654,7 @@ class QuakePlayer : PlayerPawn
 
         if (waterLevel <= WL_Feet && player.onGround)
         {
-            double control = spd < stopSpeed ? stopSpeed : spd;
+            double control = Max(spd, stopSpeed);
             drop += control * groundFriction;
             drop *= GetMoveFactor();
         }
