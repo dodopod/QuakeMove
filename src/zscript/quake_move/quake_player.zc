@@ -862,8 +862,6 @@ class QuakePlayer : PlayerPawn
         // [SP] Allow DECORATE changes to view bobbing speed.
 		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0. , 1.5)) + land;
 
-        Console.Printf("%.2f", land);
-
 		if (Floorclip && player.playerstate != PST_DEAD
 			&& pos.Z <= floorz)
 		{
