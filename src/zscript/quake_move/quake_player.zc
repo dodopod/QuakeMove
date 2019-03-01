@@ -28,6 +28,7 @@ class QuakePlayer : PlayerPawn
     }
 
 
+    const quakeBobCVar = "CG_QuakeBob";
     const runPitchCVar = "CG_RunPitch";
     const runRollCVar = "CG_RunRoll";
     const bobPitchCVar = "CG_BobPitch";
@@ -742,6 +743,12 @@ class QuakePlayer : PlayerPawn
     // Adapted from cg_view.c: CG_OffsetFirstPersonView and player.txt: CalcHeight
     override void CalcHeight()
     {
+        if (!CVar.GetCVar(QuakeBobCVar, player).GetBool())
+        {
+            Super.CalcHeight();
+            return;
+        }
+
         double newPitch = 0;
         double newRoll = 0;
 
@@ -871,6 +878,8 @@ class QuakePlayer : PlayerPawn
     // Adapted from cg_weapons.c: CG_CalculateWeaponPosition
     override Vector2 BobWeapon(double ticFrac)
     {
+        if (!CVar.GetCVar(QuakeBobCVar, player).GetBool()) return Super.BobWeapon(ticFrac);
+
         let weapon = player.readyWeapon;
 
         Vector2 offset = (0, 0);
