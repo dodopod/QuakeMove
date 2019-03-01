@@ -5,6 +5,8 @@ user float CG_RunRoll = 0.005;
 user float CG_BobPitch = 0.002;
 user float CG_BobRoll = 0.002;
 user float CG_BobUp = 0.005;
+user float CG_DamageKick = 1.0;
+user float CG_LandDown = 1.0;
 
 user bool CG_Speedometer = false;
 
