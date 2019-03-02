@@ -923,15 +923,16 @@ class QuakePlayer : PlayerPawn
     {
         UserCmd cmd = player.cmd;
 
-        player.vel = vel.xy;
+        // player.bob is 35x bigger than in Doom; not sure if that matters for anything
+        bool shift = CVar.GetCVar(assumeCVarDefaultsCVar).getBool();
+        player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (shift ? moveBobShift : 0));
 
         // airborne leaves position in cycle intact, but doesn't advance
         if (!player.onGround) return;
 
         if (!cmd.forwardMove && !cmd.sideMove)
         {
-            // This is in Quake 3, but causes bob to jerk back to center when player stops
-            //if (vel.xy.Length() < 5 * ups) bobCycle = 0;
+            if (vel.xy.Length() < 5 * ups) bobCycle = 0;
             return;
         }
 
@@ -943,10 +944,6 @@ class QuakePlayer : PlayerPawn
         double old = bobCycle;
         bobCycle = (bobCycle + bobMove) % 256;
         bobFracSin = Abs(Sin((bobCycle % 128) / 127.0 * 180));
-
-        // player.bob is 35x bigger than in Doom; not sure if that matters for anything
-        bool shift = CVar.GetCVar(assumeCVarDefaultsCVar).getBool();
-        player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (shift ? moveBobShift : 0));
 
         // Spawn footstep every half-cycle
         if (bobCycle > 128 && old <= 128 || old > bobCycle)
