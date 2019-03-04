@@ -14,7 +14,7 @@ class QuakePlayer : PlayerPawn
 
     Default
     {
-		Speed 320.0 * ups;  // No idea how close Doom & Quake units are, but it feels right
+        Speed 320.0 * ups;  // No idea how close Doom & Quake units are, but it feels right
         Player.JumpZ 270.0 * ups;
 
         MaxStepHeight 18;
