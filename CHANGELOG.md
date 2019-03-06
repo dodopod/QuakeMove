@@ -23,6 +23,7 @@
 ## Changed ##
 * Now licensed under GPL v3
 * `QuakePlayer` now descends directly from `PlayerPawn`. The original behavior (where `QuakePlayer` descends from `DoomPlayer`) is preserved on the `doom-mod` branch.
+* Player now walks at the same speed when moving forward vs. strafing (160 UPS)
 * Lower jump (280 UPS -> 270 UPS)
 * Lower step height (24 UPS -> 18 UPS)
 * Custom friction uses +NoFriction flag
