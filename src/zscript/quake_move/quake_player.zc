@@ -884,6 +884,7 @@ class QuakePlayer : PlayerPawn
         if (!CVar.GetCVar(QuakeBobCVar, player).GetBool()) return Super.BobWeapon(ticFrac);
 
         let weapon = player.readyWeapon;
+		if (weapon == null || weapon.bDontBob) return (0, 0);
 
         Vector2 offset = (0, 0);
 
