@@ -24,6 +24,8 @@ class QuakePlayer : PlayerPawn
         QuakePlayer.ViewTilt 1.0;
         QuakePlayer.FootstepClass "Footstep";
 
+        Player.DisplayName "QuakePlayer";
+
         +NoFriction
     }
 
