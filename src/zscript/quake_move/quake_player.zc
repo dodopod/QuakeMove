@@ -26,8 +26,8 @@ class QuakePlayer : PlayerPawn
         QuakePlayer.UpMove 0.5;
         QuakePlayer.ViewTilt 1.0;
         QuakePlayer.FootstepClass "Footstep";
-        QuakePlayer.LagSensitivity 100, 50;
-        QuakePlayer.LagRecenter 0.2, 0.4;
+        QuakePlayer.LagSensitivity 100, 100;
+        QuakePlayer.LagRecenter 0.2, 0.5;
 
         Player.DisplayName "QuakePlayer";
 
@@ -910,10 +910,8 @@ class QuakePlayer : PlayerPawn
         // Weapon lag
         UserCmd cmd = player.cmd;
         lagOffset += (lagSensitivityX * cmd.yaw / maxYaw, lagSensitivityY * cmd.pitch / maxPitch);
-        lagOffset -= (lagRecenterX * ticFrac * lagOffset.x, lagRecenterY * ticFrac * lagOffset.y);
+        lagOffset -= (lagRecenterX * lagOffset.x, lagRecenterY * lagOffset.y);
         offset += lagOffset;
-
-        Console.Printf("%.2f, %.2f", lagOffset.x, lagOffset.y);
 
         return offset;
     }
