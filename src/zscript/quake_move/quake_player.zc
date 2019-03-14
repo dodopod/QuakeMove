@@ -337,35 +337,7 @@ class QuakePlayer : PlayerPawn
     {
 		UserCmd cmd = player.cmd;
 
-        // Start flying
-        if (cmd.upMove)
-        {
-            if (bFly || (player.cheats & CF_NOCLIP2))
-            {
-                bFly = true;
-                bNoGravity = true;
-
-                if ((Vel.Z <= -39) && !(player.cheats & CF_PREDICTING))
-                {   // Stop falling scream
-                    A_StopSound(CHAN_VOICE);
-                }
-
-                FlyMove();
-                return;
-            }
-            else if (cmd.upMove > 0 && !(player.cheats & CF_PREDICTING))
-			{
-				let fly = FindInventory("ArtiFly");
-				if (fly)
-                {
-                    UseInventory(fly);
-
-                    FlyMove();
-                    return;
-                }
-			}
-        }
-
+        CheckFlight();
         CheckJump();
         if (!player.onGround)
         {
@@ -541,35 +513,7 @@ class QuakePlayer : PlayerPawn
     {
 		UserCmd cmd = player.cmd;
 
-        // Start flying
-        if (cmd.upMove)
-        {
-            if (bFly || (player.cheats & CF_NOCLIP2))
-            {
-                bFly = true;
-                bNoGravity = true;
-
-                if ((Vel.Z <= -39) && !(player.cheats & CF_PREDICTING))
-                {   // Stop falling scream
-                    A_StopSound(CHAN_VOICE);
-                }
-
-                FlyMove();
-                return;
-            }
-            else if (cmd.upMove > 0 && !(player.cheats & CF_PREDICTING))
-			{
-				let fly = FindInventory("ArtiFly");
-				if (fly)
-                {
-                    UseInventory(fly);
-
-                    FlyMove();
-                    return;
-                }
-			}
-        }
-
+        CheckFlight();
         CheckJump();    // In case CheckJump is overridden to allow double jump, mantling, etc.
         Friction();
 
@@ -606,6 +550,38 @@ class QuakePlayer : PlayerPawn
 			{
 				player.cheats &= ~CF_RevertPlease;
 				player.camera = player.mo;
+			}
+        }
+    }
+
+
+    virtual void CheckFlight()
+    {
+        if (cmd.upMove)
+        {
+            if (bFly || (player.cheats & CF_NOCLIP2))
+            {
+                bFly = true;
+                bNoGravity = true;
+
+                if ((Vel.Z <= -39) && !(player.cheats & CF_PREDICTING))
+                {   // Stop falling scream
+                    A_StopSound(CHAN_VOICE);
+                }
+
+                FlyMove();
+                return;
+            }
+            else if (cmd.upMove > 0 && !(player.cheats & CF_PREDICTING))
+			{
+				let fly = FindInventory("ArtiFly");
+				if (fly)
+                {
+                    UseInventory(fly);
+
+                    FlyMove();
+                    return;
+                }
 			}
         }
     }
