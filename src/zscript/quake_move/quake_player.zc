@@ -11,6 +11,9 @@ class QuakePlayer : PlayerPawn
     Property ViewTilt : viewTilt;
     Property FootstepClass : footstepClass;
 
+    Property LagSensitivity : lagSensitivityX, lagSensitivityY;
+    Property LagRecenter : lagRecenterX, lagRecenterY;
+
 
     Default
     {
@@ -23,6 +26,8 @@ class QuakePlayer : PlayerPawn
         QuakePlayer.UpMove 0.5;
         QuakePlayer.ViewTilt 1.0;
         QuakePlayer.FootstepClass "Footstep";
+        QuakePlayer.LagSensitivity 100, 50;
+        QuakePlayer.LagRecenter 0.2, 0.4;
 
         Player.DisplayName "QuakePlayer";
 
@@ -56,6 +61,8 @@ class QuakePlayer : PlayerPawn
     const damageReturnTics = 0.4 * ticRate;
     const stepReturnTics = 0.2 * ticRate;
 
+    const maxYaw = 65536.0;
+    const maxPitch = 65536.0;
     const maxForwardMove = 12800;
     const maxSideMove = 10240;
     const maxUpMove = 768;
@@ -104,6 +111,11 @@ class QuakePlayer : PlayerPawn
     int damageTics;
     double damagePitch;
     double damageRoll;
+    double lagSensitivityX;
+    double lagSensitivityY;
+    double lagRecenterX;
+    double lagRecenterY;
+    Vector2 lagOffset;
 
     bool isCrouching;
     bool isRunning;
@@ -557,6 +569,8 @@ class QuakePlayer : PlayerPawn
 
     virtual void CheckFlight()
     {
+        UserCmd cmd = player.cmd;
+
         if (cmd.upMove)
         {
             if (bFly || (player.cheats & CF_NOCLIP2))
@@ -892,6 +906,14 @@ class QuakePlayer : PlayerPawn
         spd *= player.GetStillBob() + (shift ? stillBobShift : 0);
         double fracSin = Sin(double(level.time) / ticRate * (360 / 6.28)) + 1;  // +1 so weapon never goes up
         offset += (-spd * fracSin * 0.02, spd * fracSin * 0.02);
+
+        // Weapon lag
+        UserCmd cmd = player.cmd;
+        lagOffset += (lagSensitivityX * cmd.yaw / maxYaw, lagSensitivityY * cmd.pitch / maxPitch);
+        lagOffset -= (lagRecenterX * ticFrac * lagOffset.x, lagRecenterY * ticFrac * lagOffset.y);
+        offset += lagOffset;
+
+        Console.Printf("%.2f, %.2f", lagOffset.x, lagOffset.y);
 
         return offset;
     }
