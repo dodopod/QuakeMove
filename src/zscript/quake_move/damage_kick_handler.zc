@@ -1,39 +1,3 @@
-class Kicker : Inventory
-{
-    int deflectTime;
-    int returnTime;
-
-    double angle;
-    double pitch;
-    double roll;
-    double up;
-
-    override void Tick()
-    {
-        if (!owner || !owner.player) return;
-
-        double age = gameTic - spawnTime;
-        if (age < deflectTime)
-        {
-            owner.angle += angle / deflectTime;
-            owner.pitch += pitch / deflectTime;
-            owner.roll += roll / deflectTime;
-            owner.player.viewHeight += up / deflectTime;
-        }
-        else if (age < deflectTime + returnTime)
-        {
-            owner.angle -= angle / returnTime;
-            owner.pitch -= pitch / returnTime;
-            owner.roll -= roll / returnTime;
-            owner.player.viewHeight -= up / returnTime;
-        }
-        else
-        {
-            Destroy();
-        }
-    }
-}
-
 class DamageKickHandler : EventHandler
 {
     const deflectTime = int(0.1 * Thinker.ticRate);
@@ -69,29 +33,5 @@ class DamageKickHandler : EventHandler
         }
 
         mo.AddInventory(k);
-
-        /*
-        mo.damageTics = 0;
-
-        double damageKick = CVar.GetCVar(mo.damageKickCVar, mo.player).GetFloat();
-        double scale = 40.0 / mo.health;
-        double kick = Clamp(e.damage * scale, 5, 10) * damageKick;
-
-        if (e.inflictor)
-        {
-            Vector3 dir = (e.inflictor.pos - mo.pos).Unit();
-
-            Vector3 forward = (Cos(mo.pitch) * Cos(mo.angle), Cos(mo.pitch) * Sin(mo.angle), -Sin(mo.pitch));
-            Vector3 right = (Actor.AngleToVector(mo.angle - 90), 0);
-
-            mo.damageRoll = -kick * (dir dot right);
-            mo.damagePitch = -kick * (dir dot forward);
-        }
-        else    // Environmental damage
-        {
-            mo.damageRoll = 0;
-            mo.damagePitch = -kick;
-        }
-        */
     }
 }

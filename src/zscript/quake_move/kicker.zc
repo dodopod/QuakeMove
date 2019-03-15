@@ -1,0 +1,35 @@
+class Kicker : Inventory
+{
+    int deflectTime;
+    int returnTime;
+
+    double angle;
+    double pitch;
+    double roll;
+    double up;
+
+    override void Tick()
+    {
+        if (!owner || !owner.player) return;
+
+        double age = gameTic - spawnTime;
+        if (age < deflectTime)
+        {
+            owner.angle += angle / deflectTime;
+            owner.pitch += pitch / deflectTime;
+            owner.roll += roll / deflectTime;
+            owner.player.viewHeight += up / deflectTime;
+        }
+        else if (age < deflectTime + returnTime)
+        {
+            owner.angle -= angle / returnTime;
+            owner.pitch -= pitch / returnTime;
+            owner.roll -= roll / returnTime;
+            owner.player.viewHeight -= up / returnTime;
+        }
+        else
+        {
+            Destroy();
+        }
+    }
+}
