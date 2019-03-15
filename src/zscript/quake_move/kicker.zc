@@ -18,9 +18,10 @@ class Kicker : Inventory
         double age = gameTic - spawnTime;
         if (age < deflectTime)
         {
-            owner.angle += angle / deflectTime;
-            owner.pitch += pitch / deflectTime;
-            owner.roll += roll / deflectTime;
+            owner.A_SetAngle(owner.angle + angle / deflectTime, SPF_Interpolate);
+            owner.A_SetPitch(owner.pitch + pitch / deflectTime, SPF_Interpolate);
+            owner.A_SetRoll(owner.roll + roll / deflectTime, SPF_Interpolate);
+
             owner.player.viewHeight += up / deflectTime;
 
             psp.x += weaponOfs.x * age / deflectTime;
@@ -28,9 +29,10 @@ class Kicker : Inventory
         }
         else if (age < deflectTime + returnTime)
         {
-            owner.angle -= angle / returnTime;
-            owner.pitch -= pitch / returnTime;
-            owner.roll -= roll / returnTime;
+            owner.A_SetAngle(owner.angle - angle / returnTime, SPF_Interpolate);
+            owner.A_SetPitch(owner.pitch - pitch / returnTime, SPF_Interpolate);
+            owner.A_SetRoll(owner.roll - roll / returnTime, SPF_Interpolate);
+
             owner.player.viewHeight -= up / returnTime;
 
             psp.x += weaponOfs.x * (1.0 - (age - deflectTime) / returnTime);
