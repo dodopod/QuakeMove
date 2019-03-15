@@ -30,6 +30,7 @@ class LandKickHandler : EventHandler
                 else up = fallShort;
 
                 k.up = up;
+                k.weaponOfs.y = -up;
 
                 mo.AddInventory(k);
             }

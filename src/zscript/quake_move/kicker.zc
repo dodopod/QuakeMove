@@ -22,8 +22,9 @@ class Kicker : Inventory
             owner.pitch += pitch / deflectTime;
             owner.roll += roll / deflectTime;
             owner.player.viewHeight += up / deflectTime;
-            psp.x += weaponOfs.x / deflectTime;
-            psp.y += weaponOfs.y / deflectTime;
+
+            psp.x += weaponOfs.x * age / deflectTime;
+            psp.y += weaponOfs.y * age / deflectTime;
         }
         else if (age < deflectTime + returnTime)
         {
@@ -31,8 +32,9 @@ class Kicker : Inventory
             owner.pitch -= pitch / returnTime;
             owner.roll -= roll / returnTime;
             owner.player.viewHeight -= up / returnTime;
-            psp.x -= weaponOfs.x / returnTime;
-            psp.y -= weaponOfs.y / returnTime;
+
+            psp.x += weaponOfs.x * (1.0 - (age - deflectTime) / returnTime);
+            psp.y += weaponOfs.y * (1.0 - (age - deflectTime) / returnTime);
         }
         else
         {
