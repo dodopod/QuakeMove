@@ -1,4 +1,4 @@
 GameInfo
 {
-    AddEventHandlers = "DamageKickHandler", "SpeedometerHandler", "StrafejumpHandler"
+    AddEventHandlers = "DamageKickHandler", "LandKickHandler", "SpeedometerHandler", "StrafejumpHandler"
 }
