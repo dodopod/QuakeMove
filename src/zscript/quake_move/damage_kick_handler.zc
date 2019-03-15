@@ -1,3 +1,19 @@
+class Kicker : Inventory
+{
+    int deflectTime;
+    int returnTime;
+
+    double angle;
+    double pitch;
+    double roll;
+    double up;
+
+    override void Tick()
+    {
+        Console.Printf("%d", spawnTime);
+    }
+}
+
 class DamageKickHandler : EventHandler
 {
     override void WorldThingDamaged(WorldEvent e)
