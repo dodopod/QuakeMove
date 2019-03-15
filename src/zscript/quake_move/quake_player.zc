@@ -53,9 +53,9 @@ class QuakePlayer : PlayerPawn
     const stillBobShift = 1;
     const moveBobShift = 0.75;
 
-    const landSpeed = 8;
-    const landDeflectTics = 0.1 * ticRate;
-    const landReturnTics = 0.4 * ticRate;
+    //const landSpeed = 8;
+    //const landDeflectTics = 0.1 * ticRate;
+    //const landReturnTics = 0.4 * ticRate;
     const stepReturnTics = 0.2 * ticRate;
 
     const maxYaw = 65536.0;
