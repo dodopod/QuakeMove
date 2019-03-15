@@ -41,7 +41,6 @@ class QuakePlayer : PlayerPawn
     const bobPitchCVar = "CG_BobPitch";
     const bobRollCVar = "CG_BobRoll";
     const bobUpCVar = "CG_BobUp";
-    const damageKickCVar = "CG_DamageKick";
     const landDownCVar = "CG_LandDown";
     const straferunningCVar = "G_Straferunning";
     const strafejumpingCVar = "G_Strafejumping";
@@ -57,8 +56,6 @@ class QuakePlayer : PlayerPawn
     const landSpeed = 8;
     const landDeflectTics = 0.1 * ticRate;
     const landReturnTics = 0.4 * ticRate;
-    const damageDeflectTics = 0.1 * ticRate;
-    const damageReturnTics = 0.4 * ticRate;
     const stepReturnTics = 0.2 * ticRate;
 
     const maxYaw = 65536.0;
@@ -108,9 +105,6 @@ class QuakePlayer : PlayerPawn
     double lastRoll;
     int landTics;
     int landChange;
-    int damageTics;
-    double damagePitch;
-    double damageRoll;
     double lagSensitivityX;
     double lagSensitivityY;
     double lagRecenterX;
@@ -158,8 +152,6 @@ class QuakePlayer : PlayerPawn
 
         if (!player.onGround) landTics = 0;
         else ++landTics;
-
-        ++damageTics;
 
         HandleMovement();
 
@@ -747,19 +739,6 @@ class QuakePlayer : PlayerPawn
         double newRoll = 0;
 
         // Weapon kick should be handled by weapons themselves
-        // Damage kick
-        if (damageTics < damageDeflectTics)
-        {
-            double ratio = damageTics / damageDeflectTics;
-            newPitch += ratio * damagePitch;
-            newRoll += ratio * damageRoll;
-        }
-        else if (damageTics < damageDeflectTics + damageReturnTics)
-        {
-            double ratio = 1 - (damageTics - damageDeflectTics) / damageReturnTics;
-            newPitch += ratio * damagePitch;
-            newRoll += ratio * damageRoll;
-        }
 
         // Velocity angles
         // Yes, they depend on actual vel, not player-intended vel

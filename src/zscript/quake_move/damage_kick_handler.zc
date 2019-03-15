@@ -1,18 +1,19 @@
 class DamageKickHandler : EventHandler
 {
+    const damageKickCVar = "CG_DamageKick";
     const deflectTime = int(0.1 * Thinker.ticRate);
     const returnTime = int(0.4 * Thinker.ticRate);
 
     override void WorldThingDamaged(WorldEvent e)
     {
-        if (!(e.thing is "QuakePlayer")) return;
+        let mo = e.thing;
+        if (!mo.player) return;
 
-        let mo = QuakePlayer(e.thing);
         let k = Kicker(Actor.Spawn("Kicker"));
         k.deflectTime = deflectTime;
         k.returnTime = returnTime;
 
-        double damageKick = CVar.GetCVar(mo.damageKickCVar, mo.player).GetFloat();
+        double damageKick = CVar.GetCVar(damageKickCVar, mo.player).GetFloat();
         double scale = 40.0 / mo.health;
         double kick = Clamp(e.damage * scale, 5, 10) * damageKick;
 
