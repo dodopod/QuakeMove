@@ -10,13 +10,34 @@ class Kicker : Inventory
 
     override void Tick()
     {
+        if (!owner || !owner.player) return;
+
+        double age = gameTic - spawnTime;
+        if (age < deflectTime)
+        {
+            owner.angle += angle / deflectTime;
+            owner.pitch += pitch / deflectTime;
+            owner.roll += roll / deflectTime;
+            owner.player.viewHeight += up / deflectTime;
+        }
+        else if (age < deflectTime + returnTime)
+        {
+            owner.angle -= angle / returnTime;
+            owner.pitch -= pitch / returnTime;
+            owner.roll -= roll / returnTime;
+            owner.player.viewHeight -= up / returnTime;
+        }
+        else
+        {
+            Destroy();
+        }
     }
 }
 
 class DamageKickHandler : EventHandler
 {
-    const deflectTime = 0.1 * Thinker.ticRate;
-    const returnTime = 0.4 * Thinker.ticRate;
+    const deflectTime = int(0.1 * Thinker.ticRate);
+    const returnTime = int(0.4 * Thinker.ticRate);
 
     override void WorldThingDamaged(WorldEvent e)
     {
