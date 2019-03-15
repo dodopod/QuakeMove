@@ -7,10 +7,13 @@ class Kicker : Inventory
     double pitch;
     double roll;
     double up;
+    Vector2 weaponOfs;
 
     override void Tick()
     {
         if (!owner || !owner.player) return;
+
+        let psp = owner.player.GetPSprite(PSprite.Weapon);
 
         double age = gameTic - spawnTime;
         if (age < deflectTime)
@@ -19,6 +22,8 @@ class Kicker : Inventory
             owner.pitch += pitch / deflectTime;
             owner.roll += roll / deflectTime;
             owner.player.viewHeight += up / deflectTime;
+            psp.x += weaponOfs.x / deflectTime;
+            psp.y += weaponOfs.y / deflectTime;
         }
         else if (age < deflectTime + returnTime)
         {
@@ -26,6 +31,8 @@ class Kicker : Inventory
             owner.pitch -= pitch / returnTime;
             owner.roll -= roll / returnTime;
             owner.player.viewHeight -= up / returnTime;
+            psp.x -= weaponOfs.x / returnTime;
+            psp.y -= weaponOfs.y / returnTime;
         }
         else
         {
