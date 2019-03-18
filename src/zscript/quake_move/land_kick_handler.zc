@@ -1,5 +1,6 @@
 class LandKickHandler : EventHandler
 {
+    const landKickCVar = "CG_LandKick";
     const deflectTime = 0.1 * Thinker.ticRate;
     const returnTime = 0.4 * Thinker.ticRate;
     const landSpeed = 8;
@@ -28,6 +29,9 @@ class LandKickHandler : EventHandler
                 if (zVels[i] <= -mo.fallingScreamMinSpeed) up = fallFar;
                 else if (zVels[i] <= -mo.gruntSpeed) up = fallMedium;
                 else up = fallShort;
+
+                double landKick = CVar.GetCVar(landKickCVar, player).GetFloat();
+                up *= landKick;
 
                 k.up = up;
                 k.weaponOfs.y = -up;
