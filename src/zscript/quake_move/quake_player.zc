@@ -11,9 +11,6 @@ class QuakePlayer : PlayerPawn
     Property ViewTilt : viewTilt;
     Property FootstepClass : footstepClass;
 
-    Property LagSensitivity : lagSensitivityX, lagSensitivityY;
-    Property LagRecenter : lagRecenterX, lagRecenterY;
-
 
     Default
     {
@@ -26,8 +23,6 @@ class QuakePlayer : PlayerPawn
         QuakePlayer.UpMove 0.5;
         QuakePlayer.ViewTilt 1.0;
         QuakePlayer.FootstepClass "Footstep";
-        QuakePlayer.LagSensitivity 100, 100;
-        QuakePlayer.LagRecenter 0.2, 0.5;
 
         Player.DisplayName "QuakePlayer";
 
@@ -99,11 +94,6 @@ class QuakePlayer : PlayerPawn
     double bobFracSin;
     double lastPitch;
     double lastRoll;
-    double lagSensitivityX;
-    double lagSensitivityY;
-    double lagRecenterX;
-    double lagRecenterY;
-    Vector2 lagOffset;
 
     bool isCrouching;
     bool isRunning;
@@ -800,7 +790,7 @@ class QuakePlayer : PlayerPawn
         }
 
         // [SP] Allow DECORATE changes to view bobbing speed.
-		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0. , 1.5));// + land;
+		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0. , 1.5));
 
 		if (Floorclip && player.playerstate != PST_DEAD
 			&& pos.Z <= floorz)
@@ -842,12 +832,6 @@ class QuakePlayer : PlayerPawn
         spd *= player.GetStillBob() + (shift ? stillBobShift : 0);
         double fracSin = Sin(double(level.time) / ticRate * (360 / 6.28)) + 1;  // +1 so weapon never goes up
         offset += (-spd * fracSin * 0.02, spd * fracSin * 0.02);
-
-        // Weapon lag
-        UserCmd cmd = player.cmd;
-        lagOffset += (lagSensitivityX * cmd.yaw / maxYaw, lagSensitivityY * cmd.pitch / maxPitch);
-        lagOffset -= (lagRecenterX * lagOffset.x, lagRecenterY * lagOffset.y);
-        offset += lagOffset;
 
         return offset;
     }
