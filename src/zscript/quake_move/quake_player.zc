@@ -42,6 +42,8 @@ class QuakePlayer : PlayerPawn
     const waterControlCVar = "SV_WaterControl";
     const flyControlCVar = "SV_FlyControl";
     const assumeCVarDefaultsCVar = "SV_AssumeCVarDefaults";
+    const stillBobCVar = "StillBob";
+    const moveBobCVar = "MoveBob";
 
     const airControlShift = 0.1 - 0.00390625;
     const stillBobShift = 1;
@@ -216,7 +218,7 @@ class QuakePlayer : PlayerPawn
 		}
 
         Footsteps();
-        CalcHeight();   // View bob
+        CalcHeight372();   // View bob
     }
 
 
@@ -743,7 +745,7 @@ class QuakePlayer : PlayerPawn
     /////////////////////////
 
     // Adapted from cg_view.c: CG_OffsetFirstPersonView and player.txt: CalcHeight
-    override void CalcHeight()
+    virtual void CalcHeight372()
     {
         if (!CVar.GetCVar(QuakeBobCVar, player).GetBool())
         {
@@ -911,7 +913,8 @@ class QuakePlayer : PlayerPawn
         // Idle drift
         double spd = player.vel.Length() * ticRate + 40;
         bool shift = CVar.GetCVar(assumeCVarDefaultsCVar).getBool();
-        spd *= player.GetStillBob() + (shift ? stillBobShift : 0);
+        double stillBob = CVar.GetCVar(stillBobCVar, player).GetFloat();
+        spd *= stillBob + (shift ? stillBobShift : 0);
         double fracSin = Sin(double(level.time) / ticRate * (360 / 6.28)) + 1;  // +1 so weapon never goes up
         offset += (-spd * fracSin * 0.02, spd * fracSin * 0.02);
 
@@ -926,7 +929,8 @@ class QuakePlayer : PlayerPawn
 
         // player.bob is 35x bigger than in Doom; not sure if that matters for anything
         bool shift = CVar.GetCVar(assumeCVarDefaultsCVar).getBool();
-        player.bob = player.vel.Length() * ticRate * (player.GetMoveBob() + (shift ? moveBobShift : 0));
+        double moveBob = CVar.GetCVar(moveBobCVar, player).GetFloat();
+        player.bob = player.vel.Length() * ticRate * (moveBob + (shift ? moveBobShift : 0));
 
         // airborne leaves position in cycle intact, but doesn't advance
         if (!player.onGround) return;
