@@ -1,3 +1,9 @@
+# v2.0.1 #
+## Fixed ##
+* CalcHeight function replaced, rather than overridden (since it's native and not virtual in GZDoom v3.7.2).
+* GetStillBob/MoveBob no longer called (since they don't exist in GZDoom v3.7.2).
+
+
 # v2.0 #
 ## Added ##
 * Quake 3 style weapon and view bob
