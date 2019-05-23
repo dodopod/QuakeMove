@@ -38,7 +38,6 @@ class QuakePlayer : PlayerPawn
     const bobUpCVar = "CG_BobUp";
     const straferunningCVar = "G_Straferunning";
     const strafejumpingCVar = "G_Strafejumping";
-    const airControlCVar = "SV_AirControl";
     const waterControlCVar = "SV_WaterControl";
     const flyControlCVar = "SV_FlyControl";
     const assumeCVarDefaultsCVar = "SV_AssumeCVarDefaults";
@@ -522,7 +521,7 @@ class QuakePlayer : PlayerPawn
             double wishSpeed = wishVel.Length();
 
             bool shift = CVar.GetCVar(assumeCVarDefaultsCVar).getBool();
-            double accel = CVar.GetCVar(airControlCVar).GetFloat() + (shift ? airControlShift : 0);
+            double accel = level.airControl + (shift ? airControlShift : 0);
             accel *= GetMoveFactor() * acceleration;
             Accelerate(wishDir, wishSpeed, accel);
             BobAccelerate(wishDir, wishSpeed, accel);
