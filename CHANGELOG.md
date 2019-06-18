@@ -1,3 +1,16 @@
+# v2.0.2 #
+## Fixed ##
+* Player no longer sticks to ground when swimming.
+
+## Changed ##
+* CalcHeight function overridden, since GZDoom 4.0 has been released.
+* Player now walks at the same speed when moving forward vs. strafing in main release.
+
+# v2.0.1 #
+## Fixed ##
+* CalcHeight function replaced, rather than overridden (since it's native and not virtual in GZDoom v3.7.2).
+* GetStillBob/MoveBob no longer called (since they don't exist in GZDoom v3.7.2).
+
 # v2.0 #
 ## Added ##
 * Quake 3 style weapon and view bob
