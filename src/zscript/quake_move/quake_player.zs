@@ -36,11 +36,8 @@ class QuakePlayer : PlayerPawn
     const bobPitchCVar = "CG_BobPitch";
     const bobRollCVar = "CG_BobRoll";
     const bobUpCVar = "CG_BobUp";
-    const damageKickCVar = "CG_DamageKick";
-    const landDownCVar = "CG_LandDown";
     const straferunningCVar = "G_Straferunning";
     const strafejumpingCVar = "G_Strafejumping";
-    const airControlCVar = "SV_AirControl";
     const waterControlCVar = "SV_WaterControl";
     const flyControlCVar = "SV_FlyControl";
     const assumeCVarDefaultsCVar = "SV_AssumeCVarDefaults";
@@ -49,13 +46,10 @@ class QuakePlayer : PlayerPawn
     const stillBobShift = 1;
     const moveBobShift = 0.75;
 
-    const landSpeed = 8;
-    const landDeflectTics = 0.1 * ticRate;
-    const landReturnTics = 0.4 * ticRate;
-    const damageDeflectTics = 0.1 * ticRate;
-    const damageReturnTics = 0.4 * ticRate;
     const stepReturnTics = 0.2 * ticRate;
 
+    const maxYaw = 65536.0;
+    const maxPitch = 65536.0;
     const maxForwardMove = 12800;
     const maxSideMove = 10240;
     const maxUpMove = 768;
@@ -99,11 +93,6 @@ class QuakePlayer : PlayerPawn
     double bobFracSin;
     double lastPitch;
     double lastRoll;
-    int landTics;
-    int landChange;
-    int damageTics;
-    double damagePitch;
-    double damageRoll;
 
     bool isCrouching;
     bool isRunning;
@@ -132,7 +121,7 @@ class QuakePlayer : PlayerPawn
 		player.onGround = (pos.z <= floorZ) || bOnMobj || bMBFBouncer || (player.cheats & CF_NoClip2);
 
         // Stick player to ground when going down stairs
-        if (wasOnGround && !player.onGround && pos.z - GetZAt() < maxDropOffHeight)
+        if (wasOnGround && !player.onGround && pos.z - GetZAt() < maxDropOffHeight && vel.z <= 0)
         {
             player.viewHeight += (pos.z - GetZAt());
             player.deltaViewHeight -= (pos.z - GetZAt()) / 8;
@@ -143,11 +132,6 @@ class QuakePlayer : PlayerPawn
         // I'm not sure how this is done in PlayerPawn
         // Put player back in idle state after moving
         if (!player.cmd.forwardMove && !player.cmd.sideMove && (!player.onGround || !player.vel.Length())) PlayIdle();
-
-        if (!player.onGround) landTics = 0;
-        else ++landTics;
-
-        ++damageTics;
 
         HandleMovement();
 
@@ -337,35 +321,7 @@ class QuakePlayer : PlayerPawn
     {
 		UserCmd cmd = player.cmd;
 
-        // Start flying
-        if (cmd.upMove)
-        {
-            if (bFly || (player.cheats & CF_NOCLIP2))
-            {
-                bFly = true;
-                bNoGravity = true;
-
-                if ((Vel.Z <= -39) && !(player.cheats & CF_PREDICTING))
-                {   // Stop falling scream
-                    A_StopSound(CHAN_VOICE);
-                }
-
-                FlyMove();
-                return;
-            }
-            else if (cmd.upMove > 0 && !(player.cheats & CF_PREDICTING))
-			{
-				let fly = FindInventory("ArtiFly");
-				if (fly)
-                {
-                    UseInventory(fly);
-
-                    FlyMove();
-                    return;
-                }
-			}
-        }
-
+        CheckFlight();
         CheckJump();
         if (!player.onGround)
         {
@@ -541,7 +497,52 @@ class QuakePlayer : PlayerPawn
     {
 		UserCmd cmd = player.cmd;
 
-        // Start flying
+        CheckFlight();
+        CheckJump();    // In case CheckJump is overridden to allow double jump, mantling, etc.
+        Friction();
+
+        if (cmd.forwardMove || cmd.sideMove)
+        {
+			double fm = cmd.forwardmove;
+			double sm = cmd.sidemove;
+			[fm, sm] = TweakSpeeds(fm, sm);
+            fm /= maxForwardMove;
+            sm /= maxSideMove;
+
+            double scale = CmdScale();
+            fm *= scale;
+            sm *= scale;
+
+            Vector3 forward = (AngleToVector(angle), 0);
+            Vector3 right = (AngleToVector(angle - 90), 0);
+            Vector3 wishVel = fm * forward + sm * right;
+
+            Vector3 wishDir = wishVel.Unit();
+            double wishSpeed = wishVel.Length();
+
+            bool shift = CVar.GetCVar(assumeCVarDefaultsCVar).getBool();
+            double accel = level.airControl + (shift ? airControlShift : 0);
+            accel *= GetMoveFactor() * acceleration;
+            Accelerate(wishDir, wishSpeed, accel);
+            BobAccelerate(wishDir, wishSpeed, accel);
+
+            // Running animation
+			if (!(player.cheats & CF_PREDICTING) && (fm != 0 || sm != 0)) PlayRunning();
+
+            // Return to 1st person (from security camera?)
+			if (player.cheats & CF_RevertPlease)
+			{
+				player.cheats &= ~CF_RevertPlease;
+				player.camera = player.mo;
+			}
+        }
+    }
+
+
+    virtual void CheckFlight()
+    {
+        UserCmd cmd = player.cmd;
+
         if (cmd.upMove)
         {
             if (bFly || (player.cheats & CF_NOCLIP2))
@@ -567,45 +568,6 @@ class QuakePlayer : PlayerPawn
                     FlyMove();
                     return;
                 }
-			}
-        }
-
-        CheckJump();    // In case CheckJump is overridden to allow double jump, mantling, etc.
-        Friction();
-
-        if (cmd.forwardMove || cmd.sideMove)
-        {
-			double fm = cmd.forwardmove;
-			double sm = cmd.sidemove;
-			[fm, sm] = TweakSpeeds(fm, sm);
-            fm /= maxForwardMove;
-            sm /= maxSideMove;
-
-            double scale = CmdScale();
-            fm *= scale;
-            sm *= scale;
-
-            Vector3 forward = (AngleToVector(angle), 0);
-            Vector3 right = (AngleToVector(angle - 90), 0);
-            Vector3 wishVel = fm * forward + sm * right;
-
-            Vector3 wishDir = wishVel.Unit();
-            double wishSpeed = wishVel.Length();
-
-            bool shift = CVar.GetCVar(assumeCVarDefaultsCVar).getBool();
-            double accel = CVar.GetCVar(airControlCVar).GetFloat() + (shift ? airControlShift : 0);
-            accel *= GetMoveFactor() * acceleration;
-            Accelerate(wishDir, wishSpeed, accel);
-            BobAccelerate(wishDir, wishSpeed, accel);
-
-            // Running animation
-			if (!(player.cheats & CF_PREDICTING) && (fm != 0 || sm != 0)) PlayRunning();
-
-            // Return to 1st person (from security camera?)
-			if (player.cheats & CF_RevertPlease)
-			{
-				player.cheats &= ~CF_RevertPlease;
-				player.camera = player.mo;
 			}
         }
     }
@@ -757,19 +719,6 @@ class QuakePlayer : PlayerPawn
         double newRoll = 0;
 
         // Weapon kick should be handled by weapons themselves
-        // Damage kick
-        if (damageTics < damageDeflectTics)
-        {
-            double ratio = damageTics / damageDeflectTics;
-            newPitch += ratio * damagePitch;
-            newRoll += ratio * damageRoll;
-        }
-        else if (damageTics < damageDeflectTics + damageReturnTics)
-        {
-            double ratio = 1 - (damageTics - damageDeflectTics) / damageReturnTics;
-            newPitch += ratio * damagePitch;
-            newRoll += ratio * damageRoll;
-        }
 
         // Velocity angles
         // Yes, they depend on actual vel, not player-intended vel
@@ -813,28 +762,6 @@ class QuakePlayer : PlayerPawn
 			bob = 0;
 		}
 
-        // Fall height
-        if (landTics == 0)
-        {
-            if (-vel.z < landSpeed) landChange = 0;
-            else if (-vel.z < gruntSpeed) landChange = -8;
-            else if (-vel.z < fallingScreamMinSpeed) landChange = -16;
-            else landChange = -24;
-        }
-
-        double landDown = CVar.GetCVar(landDownCVar, player).GetFloat();
-        double land = 0;
-        if (landTics < landDeflectTics)
-        {
-            double f = landTics / landDeflectTics;
-            land += landChange * f * landDown;
-        }
-        else if (landTics < landDeflectTics + landReturnTics)
-        {
-            double f = 1 - (landTics - landDeflectTics) / landReturnTics;
-            land += landChange * f * landDown;
-        }
-
 		double defaultviewheight = ViewHeight + player.crouchviewdelta;
 
 		if (player.cheats & CF_NOVELOCITY)
@@ -862,7 +789,7 @@ class QuakePlayer : PlayerPawn
         }
 
         // [SP] Allow DECORATE changes to view bobbing speed.
-		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0. , 1.5)) + land;
+		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0. , 1.5));
 
 		if (Floorclip && player.playerstate != PST_DEAD
 			&& pos.Z <= floorz)
@@ -897,18 +824,6 @@ class QuakePlayer : PlayerPawn
         // Have to simulate yaw/pitch w/ x/y offset
         // I don't think PSPrites have roll
         offset += (xSign * player.bob * bobFracSin * 0.02 * range.x, player.bob * bobFracSin * 0.01 * range.y);
-
-        // Falling
-        if (landTics < landDeflectTics)
-        {
-            double f = landTics / landDeflectTics;
-            offset.y -= landChange * f;
-        }
-        else if (landTics < landDeflectTics + landReturnTics)
-        {
-            double f = 1 - (landTics - landDeflectTics) / landReturnTics;
-            offset.y -= landChange * f;
-        }
 
         // Idle drift
         double spd = player.vel.Length() * ticRate + 40;

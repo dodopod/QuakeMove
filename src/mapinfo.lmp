@@ -1,5 +1,7 @@
 GameInfo
 {
     PlayerClasses = "PhobosPlayer"
-    AddEventHandlers = "DamageKickHandler", "SpeedometerHandler", "StrafejumpHandler"
+    AddEventHandlers = "DamageKickHandler", "LandKickHandler", "WeaponLagHandler", "SpeedometerHandler", "StrafejumpHandler"
+	NormForwardMove = 0x19, 0x32
+	NormSideMove = 0x14, 0x28
 }
