@@ -121,7 +121,7 @@ class QuakePlayer : PlayerPawn
 		player.onGround = (pos.z <= floorZ) || bOnMobj || bMBFBouncer || (player.cheats & CF_NoClip2);
 
         // Stick player to ground when going down stairs
-        if (wasOnGround && !player.onGround && pos.z - GetZAt() < maxDropOffHeight)
+        if (wasOnGround && !player.onGround && pos.z - GetZAt() < maxDropOffHeight && vel.z <= 0)
         {
             player.viewHeight += (pos.z - GetZAt());
             player.deltaViewHeight -= (pos.z - GetZAt()) / 8;
